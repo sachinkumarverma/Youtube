@@ -1,0 +1,11 @@
+footer{
+    display: flex;
+    background-color: black;
+    height: 40px;
+    color: aliceblue;
+}
+
+p{
+    text-align: center;
+    margin: auto;
+}

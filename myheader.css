@@ -1,0 +1,59 @@
+.header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 50px;
+    padding: 10px;
+    background-color: white;
+    color: rgb(0, 0, 0);
+    letter-spacing: 1px;
+}
+
+.Youtube-icon{
+    display: flex;
+    align-items: center;
+}
+
+.Youtube-icon #Menu{
+    padding: 0px 18px;
+    cursor: pointer;
+}
+
+.search-centre{
+    display: flex;  
+}
+
+.search-centre form{
+    display: flex;
+    height: 35px;
+    border: 1px solid red;
+}
+
+.search-centre input{
+    border-radius: 2px 0px 0px 2px ;
+    width: 400px;
+    height: 100%;
+    border: 0;
+    padding: 10px;
+}
+
+input:focus{
+    outline: none;
+    border: 2px solid black;
+}
+
+.search-centre button{
+    width: 70px;
+    height: 100%;
+    border: none;
+}
+
+.Materials-icon{
+    color: black;
+    padding: 0px 7px ;
+    cursor: pointer;
+}
+
+.mic{
+    margin-top: 6px;
+}

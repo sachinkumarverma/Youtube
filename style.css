@@ -1,0 +1,29 @@
+*{  margin: 0;
+    box-sizing: border-box;
+    /* border: 1px solid red; */
+}
+
+body{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif
+}
+
+main{
+    display: flex;
+    background-color: rgb(93, 112, 129);
+    height: calc(100vh - 40px - 50px);
+}
+
+@media (max-width:700px) {
+    .sidebar{
+        display: none;
+    }
+    .search-centre{
+        display: none;
+    }
+}
+
+@media (max-width:880px) {
+    .search-centre input{
+        width: 25rem;
+    }
+}
