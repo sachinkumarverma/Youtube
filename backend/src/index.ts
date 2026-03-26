@@ -7,6 +7,8 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import videoRoutes from './routes/videos';
 import interactionRoutes from './routes/interactions';
+import userRoutes from './routes/user';
+import notificationRoutes from './routes/notifications';
 
 dotenv.config();
 
@@ -22,6 +24,9 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api', interactionRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/notifications', notificationRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('YouTube Clone API is running!');
@@ -30,3 +35,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+

@@ -1,22 +1,49 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
+import VideoPlayer from './pages/VideoPlayer';
+import VideoList from './pages/VideoList';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Subscriptions from './pages/Subscriptions';
+import ChannelDetail from './pages/ChannelDetail';
+import Upload from './pages/Upload';
 import './index.css';
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+
   return (
     <Router>
       <div className="app-container">
-        <Navbar />
+        <Navbar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
         <div className="main-wrapper">
-          <Sidebar />
-          <div className="page-content">
+          <Sidebar isOpen={isSidebarOpen} />
+          <main className="page-content">
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/video/:id" element={<div style={{color: 'white'}}>Video Player Page Comming Soon!</div>} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/video/:id" element={<VideoPlayer />} />
+              <Route path="/explore" element={<VideoList endpoint="videos/explore" title="Explore" />} />
+              <Route path="/trending" element={<VideoList endpoint="videos/trending" title="Trending" />} />
+              <Route path="/gaming" element={<VideoList endpoint="videos?category=Gaming" title="Gaming" />} />
+              <Route path="/subscriptions" element={<Subscriptions />} />
+              <Route path="/channel/:id" element={<ChannelDetail />} />
+              <Route path="/upload" element={<Upload />} />
+              <Route path="/history" element={<VideoList endpoint="user/history" title="History" />} />
+              <Route path="/watch-later" element={<VideoList endpoint="user/watch-later" title="Watch Later" />} />
+              <Route path="/liked" element={<VideoList endpoint="user/liked" title="Liked Videos" />} />
+              <Route
+                path="/channel"
+                element={user ? <Navigate to={`/channel/${user.id}`} /> : <Navigate to="/login" />}
+              />
             </Routes>
-          </div>
+          </main>
         </div>
       </div>
     </Router>

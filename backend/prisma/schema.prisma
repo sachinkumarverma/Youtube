@@ -14,11 +14,20 @@ model User {
   email         String    @unique
   password_hash String
   avatar_url    String?
+  banner_url    String?
+  about         String?
   created_at    DateTime  @default(now())
+  username_updated_at DateTime?
+
 
   videos      Video[]
   comments    Comment[]
   likes       Like[]
+  subscriptions Subscription[] @relation("Subscriber")
+  subscribers   Subscription[] @relation("SubscribedTo")
+  watch_later   WatchLater[]
+  history       History[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -29,6 +38,8 @@ model Video {
   description   String?
   video_url     String
   thumbnail_url String?
+  category      String?
+  duration      String?
   views         Int       @default(0)
   user_id       String
   created_at    DateTime  @default(now())
@@ -36,6 +47,8 @@ model Video {
   user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   comments    Comment[]
   likes       Like[]
+  watch_later WatchLater[]
+  history     History[]
 
   @@map("videos")
 }
@@ -58,6 +71,7 @@ model Like {
   user_id  String
   video_id String
   type     LikeType
+  created_at DateTime @default(now())
 
   user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
   video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
@@ -69,4 +83,60 @@ model Like {
 enum LikeType {
   LIKE
   DISLIKE
+}
+
+model Subscription {
+  id                String   @id @default(uuid())
+  subscriber_id     String
+  channel_id        String
+  notifications_on  Boolean  @default(true)
+  created_at        DateTime @default(now())
+
+  subscriber User @relation("Subscriber", fields: [subscriber_id], references: [id], onDelete: Cascade)
+  channel    User @relation("SubscribedTo", fields: [channel_id], references: [id], onDelete: Cascade)
+
+  @@unique([subscriber_id, channel_id])
+  @@map("subscriptions")
+}
+
+model WatchLater {
+  id         String   @id @default(uuid())
+  user_id    String
+  video_id   String
+  created_at DateTime @default(now())
+
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, video_id])
+  @@map("watch_later")
+}
+
+model History {
+  id         String   @id @default(uuid())
+  user_id    String
+  video_id   String
+  viewed_at  DateTime @default(now())
+
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, video_id])
+  @@map("history")
+}
+
+model Notification {
+  id           String    @id @default(uuid())
+  user_id      String
+  title        String
+  content      String?
+  type         String    // NEW_VIDEO, NEW_COMMENT, etc.
+  video_id     String?
+  from_user_id String?
+  is_read      Boolean   @default(false)
+  created_at   DateTime  @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }

@@ -1,75 +1,57 @@
 import { useState, useEffect } from 'react';
-// import axios from 'axios';
+import axios from 'axios';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from '../i18n';
 
 interface Video {
   id: string;
   title: string;
+  description?: string;
+  category?: string;
   thumbnail_url: string | null;
+  duration?: string;
   views: number;
-  user: { username: string };
+  user: { username: string, avatar_url?: string };
+  user_id: string;
   created_at: string;
 }
 
-const CATEGORIES = ["All", "Gaming", "Music", "Live", "Programming", "News", "Podcasts", "Sports", "Mixes"];
-
 const Home = () => {
-  const [activeCategory, setActiveCategory] = useState("All");
   const [videos, setVideos] = useState<Video[]>([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
-    // We fetch from the backend later, for now we will setup dummy data to see the UI.
-    const dummyVideos: Video[] = [
-      {
-        id: "1",
-        title: "Building a YouTube Clone with React & Node.js - Full Tutorial 2026",
-        thumbnail_url: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1200&auto=format&fit=crop",
-        views: 120450,
-        user: { username: "CodeMaster" },
-        created_at: "2026-03-24T10:00:00Z"
-      },
-      {
-        id: "2",
-        title: "Lofi Hip Hop Radio - Beats to Relax/Study to",
-        thumbnail_url: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=1200&auto=format&fit=crop",
-        views: 2500000,
-        user: { username: "ChilledCow" },
-        created_at: "2026-03-20T10:00:00Z"
-      },
-      {
-        id: "3",
-        title: "Top 10 Programming Languages to Learn in 2026",
-        thumbnail_url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1200&auto=format&fit=crop",
-        views: 45000,
-        user: { username: "TechGuru" },
-        created_at: "2026-03-25T08:00:00Z"
-      },
-      {
-        id: "4",
-        title: "Epic Space Ambience - 4K Deep Space Exploration",
-        thumbnail_url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200&auto=format&fit=crop",
-        views: 980000,
-        user: { username: "SpaceVibes" },
-        created_at: "2026-03-10T10:00:00Z"
-      },
-      {
-        id: "5",
-        title: "The Best Modern Architecture of 2026",
-        thumbnail_url: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop",
-        views: 32000,
-        user: { username: "DesignWeekly" },
-        created_at: "2026-03-22T10:00:00Z"
-      },
-      {
-        id: "6",
-        title: "Cyberpunk 2077 - Next Gen Graphics Mod Preview",
-        thumbnail_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop",
-        views: 560000,
-        user: { username: "GamerProX" },
-        created_at: "2026-03-21T10:00:00Z"
+    const fetchVideos = async () => {
+      try {
+        const res = await axios.get('http://127.0.0.1:5000/api/videos');
+        let fetchedVideos = res.data;
+
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const subRes = await axios.get('http://127.0.0.1:5000/api/user/subscriptions', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const subbedChannelIds = subRes.data.map((s: any) => s.channel_id);
+            fetchedVideos.sort((a: any, b: any) => {
+              const aSub = subbedChannelIds.includes(a.user_id) ? 1 : 0;
+              const bSub = subbedChannelIds.includes(b.user_id) ? 1 : 0;
+              if (aSub !== bSub) return bSub - aSub;
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            });
+          } catch (e) { console.error("Failed to fetch subscriptions for sorting", e); }
+        }
+        setVideos(fetchedVideos);
+      } catch (err) {
+        console.error(err);
       }
-    ];
-    setVideos(dummyVideos);
+    };
+    fetchVideos();
   }, []);
+
+  const [searchParams] = useSearchParams();
+  const query = searchParams.get('q')?.toLowerCase() || '';
+  const navigate = useNavigate();
 
   const formatViews = (views: number) => {
     if (views >= 1000000) return (views / 1000000).toFixed(1) + 'M';
@@ -79,37 +61,55 @@ const Home = () => {
 
   const getDaysAgo = (dateStr: string) => {
     const days = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / (1000 * 3600 * 24));
-    return days === 0 ? 'Today' : `${days} days ago`;
+    return days === 0 ? t('today') : `${days} ${t('daysAgo')}`;
   };
+
+  const filteredVideos = videos.filter((v: any) => {
+    if (!query || query === 'all') return true;
+    return v.title.toLowerCase().includes(query) ||
+      (v.description && v.description.toLowerCase().includes(query)) ||
+      (v.category && v.category.toLowerCase() === query);
+  });
 
   return (
     <div className="animate-fade-in">
-      <div className="categories">
-        {CATEGORIES.map(category => (
-          <button 
-            key={category} 
-            className={`category-pill ${activeCategory === category ? 'active' : ''}`}
-            onClick={() => setActiveCategory(category)}
+      <div className="categories" style={{ display: 'flex', gap: '12px', padding: '12px 24px', overflowX: 'auto' }}>
+        {['All', 'Gaming', 'Music', 'Spiritual', 'Entertainment', 'Education', 'Vlogs'].map(cat => (
+          <button
+            key={cat}
+            onClick={() => navigate(`/?q=${cat === 'All' ? '' : cat.toLowerCase()}`)}
+            className={`category-pill ${query === cat.toLowerCase() || (!query && cat === 'All') ? 'active' : ''}`}
           >
-            {category}
+            {t(cat.toLowerCase() as any)}
           </button>
         ))}
       </div>
 
       <div className="video-grid">
-        {videos.map(video => (
-          <div className="video-card" key={video.id}>
-            <div className="thumbnail-wrapper">
-              <img src={video.thumbnail_url || 'https://via.placeholder.com/400x225'} alt={video.title} className="thumbnail-img" />
-            </div>
-            <div className="video-card-info">
-              <div className="avatar">
-                {video.user.username.charAt(0).toUpperCase()}
+        {filteredVideos.map((video: any) => (
+          <div key={video.id} className="video-card-container">
+            <Link to={`/video/${video.id}`} className="video-card" style={{ textDecoration: 'none' }}>
+              <div className="thumbnail-wrapper">
+                <img src={video.thumbnail_url || 'https://via.placeholder.com/400x225'} alt={video.title} className="thumbnail-img" />
+                <span className="video-duration">{video.duration || '4:20'}</span>
               </div>
-              <div className="video-details">
-                <h3 className="video-title">{video.title}</h3>
-                <span className="channel-name">{video.user.username}</span>
-                <span className="video-stats">{formatViews(video.views)} views • {getDaysAgo(video.created_at)}</span>
+            </Link>
+            <div className="video-card-info" style={{ display: 'flex', gap: '12px', padding: '12px 0' }}>
+              <Link to={`/channel/${video.user_id}`} className="avatar" style={{ overflow: 'hidden', background: video.user.avatar_url ? 'transparent' : '', cursor: 'pointer', textDecoration: 'none', color: 'inherit', width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0 }}>
+                {video.user.avatar_url ? (
+                  <img src={video.user.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-secondary)', fontWeight: 'bold' }}>
+                    {video.user.username.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </Link>
+              <div className="video-details" style={{ flex: 1 }}>
+                <Link to={`/video/${video.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <h3 className="video-title" style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', lineBreak: 'anywhere' }}>{video.title}</h3>
+                </Link>
+                <Link to={`/channel/${video.user_id}`} className="channel-name" style={{ textDecoration: 'none', color: 'var(--text-secondary)', display: 'block', fontSize: '14px', marginTop: '4px' }}>{video.user.username}</Link>
+                <span className="video-stats" style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{formatViews(video.views)} {t('views')} • {getDaysAgo(video.created_at)}</span>
               </div>
             </div>
           </div>
