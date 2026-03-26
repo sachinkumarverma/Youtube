@@ -461,3 +461,75 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
+
+/* Enhanced Sidebar Hover */
+.sidebar-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, #3ea6ff, #9333ea);
+  border-radius: 0 4px 4px 0;
+  transform: scaleY(0);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-link:hover::before,
+.sidebar-link.active::before {
+  transform: scaleY(1);
+}
+
+.sidebar-link:hover {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary);
+  transform: translateX(4px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-link:hover svg {
+  color: #3ea6ff;
+  transition: color 0.2s ease;
+}
+
+.sidebar-link.active {
+  background: var(--bg-hover) !important;
+  font-weight: 600;
+}
+
+.sidebar-link.active svg {
+  color: #3ea6ff;
+}
+
+/* Admin Portal Styles */
+.admin-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.admin-table-row:hover {
+  background: var(--bg-hover) !important;
+}
+
+.admin-table-row {
+  transition: background 0.15s ease;
+}
+
+/* Smooth fadeIn for dropdown menus */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

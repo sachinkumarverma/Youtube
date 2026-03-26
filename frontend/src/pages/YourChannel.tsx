@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Pencil, Trash2, AlertTriangle, Upload } from 'lucide-react';
+import { Pencil, Trash2, AlertTriangle, Upload, MoreVertical } from 'lucide-react';
 import Modal from '../components/Modal';
 import { useTranslation } from '../i18n';
+import { formatDuration } from '../utils/format';
 
 export default function YourChannel() {
     const [videos, setVideos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingVideo, setEditingVideo] = useState<any>(null);
     const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
 
-    // Edit form states
     const [editTitle, setEditTitle] = useState('');
     const [editDesc, setEditDesc] = useState('');
     const [editCategory, setEditCategory] = useState('');
@@ -38,7 +40,19 @@ export default function YourChannel() {
         fetchVideos();
     }, []);
 
+    // Close menu on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setOpenMenuId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const openEditModal = (video: any) => {
+        setOpenMenuId(null);
         setEditingVideo(video);
         setEditTitle(video.title);
         setEditDesc(video.description || '');
@@ -98,25 +112,64 @@ export default function YourChannel() {
             ) : (
                 <div className="video-grid">
                     {videos.map(video => (
-                        <div key={video.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div key={video.id} style={{ position: 'relative' }}>
                             <Link to={`/video/${video.id}`} className="video-card" style={{ textDecoration: 'none', marginBottom: 0 }}>
                                 <div className="thumbnail-wrapper">
                                     <img src={video.thumbnail_url || 'https://via.placeholder.com/400x225'} alt={video.title} className="thumbnail-img" />
+                                    <span className="video-duration">{formatDuration(video.duration)}</span>
                                 </div>
                                 <div className="video-card-info" style={{ padding: '12px 0 0 0' }}>
-                                    <div className="video-details" style={{ marginLeft: 0 }}>
+                                    <div className="video-details" style={{ marginLeft: 0, paddingRight: '32px' }}>
                                         <h3 className="video-title">{video.title}</h3>
                                         <p className="video-stats">{video.views} {t('views')} • {video.category || 'No Category'}</p>
                                     </div>
                                 </div>
                             </Link>
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                <button onClick={() => openEditModal(video)} style={{ flex: 1, padding: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                    <Pencil size={16} /> {t('edit')}
+
+                            {/* 3-dot menu */}
+                            <div style={{ position: 'absolute', top: '55%', right: '4px' }} ref={openMenuId === video.id ? menuRef : null}>
+                                <button
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenMenuId(openMenuId === video.id ? null : video.id); }}
+                                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    className="hover-bg"
+                                >
+                                    <MoreVertical size={20} />
                                 </button>
-                                <button onClick={() => setDeletingVideoId(video.id)} style={{ padding: '8px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Trash2 size={16} />
-                                </button>
+
+                                {openMenuId === video.id && (
+                                    <div style={{
+                                        position: 'absolute', right: 0, top: '100%', zIndex: 100,
+                                        background: 'var(--bg-secondary)', borderRadius: '8px',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)', minWidth: '160px',
+                                        overflow: 'hidden', border: '1px solid var(--border)',
+                                        animation: 'fadeIn 0.15s ease'
+                                    }}>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); openEditModal(video); }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                                                padding: '10px 16px', background: 'transparent', border: 'none',
+                                                color: 'var(--text-primary)', cursor: 'pointer', fontSize: '14px',
+                                                transition: 'background 0.15s'
+                                            }}
+                                            className="hover-bg"
+                                        >
+                                            <Pencil size={16} /> Edit
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); setDeletingVideoId(video.id); }}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                                                padding: '10px 16px', background: 'transparent', border: 'none',
+                                                color: '#ff4444', cursor: 'pointer', fontSize: '14px',
+                                                transition: 'background 0.15s'
+                                            }}
+                                            className="hover-bg"
+                                        >
+                                            <Trash2 size={16} /> Delete
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -161,7 +214,7 @@ export default function YourChannel() {
                         <AlertTriangle size={32} />
                     </div>
                     <div>
-                        <h3 style={{ marginBottom: '8px' }}>{t('confirmDelete').split(' ')[0]} {t('confirmDelete').split(' ')[1]}?</h3>
+                        <h3 style={{ marginBottom: '8px' }}>Delete Video?</h3>
                         <p style={{ color: 'var(--text-secondary)' }}>{t('confirmDelete')}</p>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', width: '100%' }}>

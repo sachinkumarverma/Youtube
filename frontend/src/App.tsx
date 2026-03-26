@@ -35,6 +35,7 @@ function App() {
               <Route path="/subscriptions" element={<Subscriptions />} />
               <Route path="/channel/:id" element={<ChannelDetail />} />
               <Route path="/upload" element={<Upload />} />
+
               <Route path="/history" element={<VideoList endpoint="user/history" title="History" />} />
               <Route path="/watch-later" element={<VideoList endpoint="user/watch-later" title="Watch Later" />} />
               <Route path="/liked" element={<VideoList endpoint="user/liked" title="Liked Videos" />} />

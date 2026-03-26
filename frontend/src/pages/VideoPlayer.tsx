@@ -37,6 +37,8 @@ export default function VideoPlayer() {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [showShareModal, setShowShareModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [selectedReason, setSelectedReason] = useState('');
+    const [reportSubmitted, setReportSubmitted] = useState(false);
     const { t } = useTranslation();
     const videoRef = useRef<HTMLVideoElement>(null);
     const viewedRef = useRef<string | null>(null);
@@ -54,7 +56,6 @@ export default function VideoPlayer() {
                     setCurrentUser(u);
                     setIsLiked(response.data.likes.some((l: any) => l.user_id === u.id));
 
-                    // Check watch later & subscription
                     const token = localStorage.getItem('token');
                     if (token) {
                         axios.post(`http://127.0.0.1:5000/api/user/history/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
@@ -67,13 +68,6 @@ export default function VideoPlayer() {
                     }
                 }
 
-                // Log for debugging subscription button
-                const finalUser = userStr ? JSON.parse(userStr) : null;
-                console.log('Video Uploader ID:', response.data.user_id);
-                console.log('Current User ID:', finalUser?.id);
-                console.log('Should show subscribe button:', !finalUser || finalUser.id !== response.data.user_id);
-
-                // Increment view only once per component mount (addresses React StrictMode double call)
                 if (viewedRef.current !== id) {
                     await axios.put(`http://127.0.0.1:5000/api/videos/${id}/view`, {});
                     viewedRef.current = id || null;
@@ -124,13 +118,20 @@ export default function VideoPlayer() {
         } catch (err: any) { alert(err.response?.data?.error || 'Failed to subscribe'); }
     };
 
-    const handleReport = () => {
-        setShowReportModal(true);
-    };
-
-    const submitReport = () => {
-        setShowReportModal(false);
-        alert('Thank you for reporting. Our team will review this video.');
+    const submitReport = async () => {
+        if (!selectedReason) return;
+        const token = localStorage.getItem('token');
+        if (!token) return alert('Please login to report!');
+        try {
+            await axios.post(`http://127.0.0.1:5000/api/reports/${id}`, { reason: selectedReason }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setReportSubmitted(true);
+            setTimeout(() => { setShowReportModal(false); setReportSubmitted(false); setSelectedReason(''); }, 2000);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to submit report');
+        }
     };
 
     const handleComment = async (e: React.FormEvent) => {
@@ -156,10 +157,6 @@ export default function VideoPlayer() {
         }
     };
 
-    const handleShare = () => {
-        setShowShareModal(true);
-    };
-
     const copyToClipboard = () => {
         navigator.clipboard.writeText(window.location.href);
         alert('URL copied to clipboard!');
@@ -172,13 +169,7 @@ export default function VideoPlayer() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
 
             <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
-                <video
-                    ref={videoRef}
-                    src={video.video_url}
-                    controls
-                    autoPlay
-                    style={{ width: '100%', height: '100%', outline: 'none' }}
-                />
+                <video ref={videoRef} src={video.video_url} controls autoPlay style={{ width: '100%', height: '100%', outline: 'none' }} />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -213,16 +204,16 @@ export default function VideoPlayer() {
                         <button onClick={() => skipVideo(2)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
                             <SkipForward size={20} />
                         </button>
-                        <button onClick={handleLike} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: isLiked ? 'var(--text-primary)' : 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        <button onClick={handleLike} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
                             <ThumbsUp size={20} fill={isLiked ? 'var(--text-primary)' : 'none'} /> {likesCount}
                         </button>
                         <button onClick={handleWatchLater} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: isWatchLater ? 'rgba(62, 166, 255, 0.1)' : 'var(--bg-hover)', color: isWatchLater ? '#3ea6ff' : 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            {isWatchLater ? <Check size={20} /> : <Clock size={20} />} {isWatchLater ? 'Added to Watch Later' : t('watchLater')}
+                            {isWatchLater ? <Check size={20} /> : <Clock size={20} />} {isWatchLater ? 'Saved' : t('watchLater')}
                         </button>
-                        <button onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        <button onClick={() => setShowShareModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
                             <Share2 size={20} /> {t('share')}
                         </button>
-                        <button onClick={handleReport} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        <button onClick={() => setShowReportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
                             <Flag size={20} /> Report
                         </button>
                     </div>
@@ -249,13 +240,7 @@ export default function VideoPlayer() {
                         )}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '8px' }}>
-                        <input
-                            type="text"
-                            placeholder="Add a comment..."
-                            value={commentText}
-                            onChange={(e) => setCommentText(e.target.value)}
-                            style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none', padding: '8px 0', fontSize: '15px' }}
-                        />
+                        <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none', padding: '8px 0', fontSize: '15px' }} />
                         {commentText && (
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                 <button type="button" onClick={() => setCommentText('')} style={{ padding: '8px 16px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 'bold', borderRadius: '20px' }}>Cancel</button>
@@ -299,18 +284,28 @@ export default function VideoPlayer() {
                 </div>
             </Modal>
 
-            <Modal isOpen={showReportModal} onClose={() => setShowReportModal(false)} title={t('report')}>
+            <Modal isOpen={showReportModal} onClose={() => { setShowReportModal(false); setReportSubmitted(false); setSelectedReason(''); }} title="Report Video">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <p style={{ color: 'var(--text-secondary)' }}>{t('reportReason')}</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {['Spam or misleading', 'Sexual content', 'Violent or repulsive content', 'Harassment or bullying'].map(reason => (
-                            <label key={reason} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '8px', borderRadius: '8px', transition: 'background 0.2s' }} className="hover-bg">
-                                <input type="radio" name="report" />
-                                <span>{reason}</span>
-                            </label>
-                        ))}
-                    </div>
-                    <button onClick={submitReport} style={{ padding: '12px', background: 'var(--text-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', marginTop: '8px' }}>{t('report')}</button>
+                    {reportSubmitted ? (
+                        <div style={{ textAlign: 'center', padding: '24px' }}>
+                            <Check size={48} color="#34a853" style={{ marginBottom: '12px' }} />
+                            <p style={{ fontSize: '16px', fontWeight: '600' }}>Thank you for reporting</p>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Our team will review this video.</p>
+                        </div>
+                    ) : (
+                        <>
+                            <p style={{ color: 'var(--text-secondary)' }}>Why are you reporting this video?</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {['Spam or misleading', 'Sexual content', 'Violent or repulsive content', 'Harassment or bullying', 'Harmful or dangerous acts', 'Copyright violation'].map(reason => (
+                                    <label key={reason} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '10px 12px', borderRadius: '8px', background: selectedReason === reason ? 'rgba(62, 166, 255, 0.1)' : 'transparent', border: selectedReason === reason ? '1px solid #3ea6ff' : '1px solid transparent', transition: 'all 0.2s' }}>
+                                        <input type="radio" name="report" value={reason} checked={selectedReason === reason} onChange={(e) => setSelectedReason(e.target.value)} style={{ accentColor: '#3ea6ff' }} />
+                                        <span>{reason}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            <button onClick={submitReport} disabled={!selectedReason} style={{ padding: '12px', background: selectedReason ? '#ff4444' : 'var(--bg-hover)', color: selectedReason ? '#fff' : 'var(--text-secondary)', border: 'none', borderRadius: '8px', cursor: selectedReason ? 'pointer' : 'not-allowed', fontWeight: 'bold', marginTop: '8px', transition: 'all 0.2s' }}>Submit Report</button>
+                        </>
+                    )}
                 </div>
             </Modal>
         </div>

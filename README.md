@@ -1,74 +1,56 @@
-# Full-Stack YouTube Clone
+# YouTube Clone Stack
 
-This is a modern, full-stack YouTube clone built with React (Vite), Node.js, Express, and PostgreSQL (via Prisma and Supabase).
+A professional YouTube clone featuring a separate Admin Portal, secure authentication, video management, and audit logging.
 
-## Tech Stack
-* **Frontend:** React (Vite), React Router, Lucide React, vanilla CSS (Dark Mode/Glassmorphism)
-* **Backend:** Node.js, Express, JWT Authentication, bcryptjs
-* **Database:** PostgreSQL (Supabase), Prisma ORM
+## Requirements
+- Node.js 18+
+- PostgreSQL (Supabase recommended)
+- Supabase project for Video/Thumbnail storage
 
----
+## Quick Start
 
-## 🚀 How to Run Locally
-
-If you are cloning this project onto a new computer, follow these exact steps to get everything running without errors:
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/sachinkumarverma/Youtube.git
-cd Youtube
+### 1. Environment Setup
+Create a `.env` in the `backend/` directory with:
+```env
+DATABASE_URL="your-postgresql-url"
+JWT_SECRET="your-jwt-secret"
+SUPABASE_URL="your-supabase-url"
+SUPABASE_ANON_KEY="your-supabase-anon-key"
+PORT=5000
+ADMIN_SECRET="viewtube-admin-2024"
 ```
 
-### 2. Backend Setup
-The backend requires setting up environment variables to connect to your database.
-1. Open a terminal and navigate to the backend folder:
-   ```bash
-   cd backend
-   ```
-2. Install the backend dependencies:
-   ```bash
-   npm install
-   ```
-3. **Environment Setup:** Create a new file named `.env` inside the `backend` folder. Add the following variables (make sure to replace the bracketed values with your actual Supabase database connection strings):
-   ```env
-   # Connect to Supabase via connection pooling with Supavisor. (Transaction mode)
-   DATABASE_URL="postgres://[db-user]:[db-password]@[your-supabase-url]:5432/postgres"
+### 2. Database Migration
+```bash
+cd backend
+npm install
+node migrate.js
+```
 
-   # Direct connection to the database. Used for migrations.
-   DIRECT_URL="postgres://[db-user]:[db-password]@[your-supabase-url]:5432/postgres"
-   
-   PORT=5000
-   JWT_SECRET="your_secure_random_string_here"
-   ```
-4. Generate the Prisma database client:
-   ```bash
-   npx prisma generate
-   ```
-5. Start the backend development server:
-   ```bash
-   npm run dev
-   ```
-*(The backend should now be running on `http://localhost:5000`)*
+### 3. Run Applications
+Open three terminal windows:
 
-### 3. Frontend Setup
-1. Open a **new separate terminal** and navigate to the frontend folder:
-   ```bash
-   cd frontend
-   ```
-2. Install the frontend dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the Vite React development server:
-   ```bash
-   npm run dev
-   ```
-*(The UI should now be available in your browser at `http://localhost:5173`)*
+**Backend (API)**
+```bash
+cd backend
+npm run dev
+```
 
----
+**Main Frontend**
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-### Features Developed
-* Modular Express API setup for users, videos, comments, and likes.
-* JWT secured authentication middleware.
-* Prisma PostgreSQL strict-typed schema.
-* Modern frontend design utilizing complex grid systems and polished hover state animations.
+**Admin Portal**
+```bash
+cd admin
+npm install
+npm run dev
+```
+
+## Default Access
+- **Main App**: `http://localhost:5173`
+- **Admin Portal**: `http://localhost:5174`
+- **Admin Secret Key**: `viewtube-admin-2024` (Use for first-time admin registration)

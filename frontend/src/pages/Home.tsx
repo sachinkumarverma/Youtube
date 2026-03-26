@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
+import { formatDuration } from '../utils/format';
 
 interface Video {
   id: string;
@@ -91,7 +92,7 @@ const Home = () => {
             <Link to={`/video/${video.id}`} className="video-card" style={{ textDecoration: 'none' }}>
               <div className="thumbnail-wrapper">
                 <img src={video.thumbnail_url || 'https://via.placeholder.com/400x225'} alt={video.title} className="thumbnail-img" />
-                <span className="video-duration">{video.duration || '4:20'}</span>
+                <span className="video-duration">{formatDuration(video.duration)}</span>
               </div>
             </Link>
             <div className="video-card-info" style={{ display: 'flex', gap: '12px', padding: '12px 0' }}>

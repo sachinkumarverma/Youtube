@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { CheckCircle2, Info, PlayCircle, Edit3, Camera, X, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../i18n';
+import { formatDuration } from '../utils/format';
 import { supabase } from '../lib/supabase';
 import { CATEGORIES } from '../constants';
 
@@ -23,7 +24,6 @@ interface ChannelData {
 
 export default function ChannelDetail() {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const [data, setData] = useState<ChannelData | null>(null);
     const [loading, setLoading] = useState(true);
     const [isSubscribed, setIsSubscribed] = useState(false);
@@ -163,7 +163,8 @@ export default function ChannelDetail() {
 
     // Constraints & Change tracking
     const lastUpdated = user.username_updated_at;
-    const daysSinceUpdate = lastUpdated ? Math.floor((Date.now() - new Date(lastUpdated).getTime()) / (1000 * 60 * 60 * 24)) : 31;
+    const cooldownDays = 15; // User requested 15 days
+    const daysSinceUpdate = lastUpdated ? Math.floor((Date.now() - new Date(lastUpdated).getTime()) / (1000 * 60 * 60 * 24)) : cooldownDays + 1;
 
 
     const isUsernameModified = editUsername !== user.username;
@@ -172,9 +173,10 @@ export default function ChannelDetail() {
     const isBannerModified = !!bannerFile;
 
     const isSomethingModified = isUsernameModified || isAboutModified || isAvatarModified || isBannerModified;
-    // For first-time change, if lastUpdated is null, daysSinceUpdate is 31, avoiding the block.
-    const isUsernameBlocked = isUsernameModified && daysSinceUpdate < 30;
+    // For first-time change, if lastUpdated is null, daysSinceUpdate is more than cooldownDays, avoiding the block.
+    const isUsernameBlocked = isUsernameModified && daysSinceUpdate < cooldownDays;
     const isSaveDisabled = saving || !isSomethingModified || isUsernameBlocked;
+
 
     console.log('Username Cooldown Stats:', {
         editUsername,
@@ -260,7 +262,7 @@ export default function ChannelDetail() {
                                     <Link to={`/video/${video.id}`} className="video-card" style={{ textDecoration: 'none' }}>
                                         <div className="thumbnail-wrapper">
                                             <img src={video.thumbnail_url || 'https://via.placeholder.com/400x225'} alt={video.title} className="thumbnail-img" />
-                                            <span className="video-duration">{video.duration || '4:20'}</span>
+                                            <span className="video-duration">{formatDuration(video.duration)}</span>
                                         </div>
                                         <div className="video-details" style={{ marginTop: '12px' }}>
                                             <h3 className="video-title">{video.title}</h3>
@@ -368,12 +370,12 @@ export default function ChannelDetail() {
                                     {isUsernameBlocked && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', color: '#ff4444', fontSize: '14px', fontWeight: 'bold', background: 'rgba(255, 68, 68, 0.1)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255, 68, 68, 0.3)' }}>
                                             <AlertCircle size={20} />
-                                            <span>{t('usernameCooldown' as any)} ({30 - daysSinceUpdate} {t('daysRemaining' as any)})</span>
+                                            <span>{t('usernameCooldown' as any)} ({cooldownDays - daysSinceUpdate} {t('daysRemaining' as any)})</span>
                                         </div>
                                     )}
-                                    {(daysSinceUpdate < 30 && !isUsernameBlocked) && (
+                                    {(daysSinceUpdate < cooldownDays && !isUsernameBlocked) && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', color: 'var(--text-secondary)', fontSize: '13px', padding: '0 4px' }}>
-                                            <Info size={16} /> {t('waitDays' as any)} {30 - daysSinceUpdate} {t('daysRemaining' as any)}.
+                                            <Info size={16} /> {t('waitDays' as any)} {cooldownDays - daysSinceUpdate} {t('daysRemaining' as any)}.
                                         </div>
                                     )}
 
