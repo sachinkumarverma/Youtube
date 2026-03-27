@@ -1,18 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
-import { Pencil, Trash2, AlertTriangle, Upload, MoreVertical } from 'lucide-react';
+import { AlertTriangle, Upload } from 'lucide-react';
 import Modal from '../components/Modal';
 import { useTranslation } from '../i18n';
-import { formatDuration } from '../utils/format';
+import VideoSkeleton from '../components/VideoSkeleton';
+import VideoCard from '../components/VideoCard';
 
 export default function YourChannel() {
     const [videos, setVideos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingVideo, setEditingVideo] = useState<any>(null);
     const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
-    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-    const menuRef = useRef<HTMLDivElement>(null);
 
     const [editTitle, setEditTitle] = useState('');
     const [editDesc, setEditDesc] = useState('');
@@ -40,19 +38,7 @@ export default function YourChannel() {
         fetchVideos();
     }, []);
 
-    // Close menu on outside click
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setOpenMenuId(null);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
     const openEditModal = (video: any) => {
-        setOpenMenuId(null);
         setEditingVideo(video);
         setEditTitle(video.title);
         setEditDesc(video.description || '');
@@ -103,78 +89,25 @@ export default function YourChannel() {
     return (
         <div style={{ padding: '24px', color: 'var(--text-primary)', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
             <h1 style={{ marginBottom: '24px', fontSize: '24px' }}>{t('yourChannel')}</h1>
-            {loading ? (
-                <p>Loading...</p>
-            ) : videos.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '100px 24px', color: 'var(--text-secondary)' }}>
-                    <p style={{ fontSize: '20px', marginBottom: '8px' }}>{t('noVideos')}</p>
-                </div>
-            ) : (
-                <div className="video-grid">
-                    {videos.map(video => (
-                        <div key={video.id} style={{ position: 'relative' }}>
-                            <Link to={`/video/${video.id}`} className="video-card" style={{ textDecoration: 'none', marginBottom: 0 }}>
-                                <div className="thumbnail-wrapper">
-                                    <img src={video.thumbnail_url || 'https://via.placeholder.com/400x225'} alt={video.title} className="thumbnail-img" />
-                                    <span className="video-duration">{formatDuration(video.duration)}</span>
-                                </div>
-                                <div className="video-card-info" style={{ padding: '12px 0 0 0' }}>
-                                    <div className="video-details" style={{ marginLeft: 0, paddingRight: '32px' }}>
-                                        <h3 className="video-title">{video.title}</h3>
-                                        <p className="video-stats">{video.views} {t('views')} • {video.category || 'No Category'}</p>
-                                    </div>
-                                </div>
-                            </Link>
-
-                            {/* 3-dot menu */}
-                            <div style={{ position: 'absolute', top: '55%', right: '4px' }} ref={openMenuId === video.id ? menuRef : null}>
-                                <button
-                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenMenuId(openMenuId === video.id ? null : video.id); }}
-                                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                    className="hover-bg"
-                                >
-                                    <MoreVertical size={20} />
-                                </button>
-
-                                {openMenuId === video.id && (
-                                    <div style={{
-                                        position: 'absolute', right: 0, top: '100%', zIndex: 100,
-                                        background: 'var(--bg-secondary)', borderRadius: '8px',
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)', minWidth: '160px',
-                                        overflow: 'hidden', border: '1px solid var(--border)',
-                                        animation: 'fadeIn 0.15s ease'
-                                    }}>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); openEditModal(video); }}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
-                                                padding: '10px 16px', background: 'transparent', border: 'none',
-                                                color: 'var(--text-primary)', cursor: 'pointer', fontSize: '14px',
-                                                transition: 'background 0.15s'
-                                            }}
-                                            className="hover-bg"
-                                        >
-                                            <Pencil size={16} /> Edit
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); setDeletingVideoId(video.id); }}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
-                                                padding: '10px 16px', background: 'transparent', border: 'none',
-                                                color: '#ff4444', cursor: 'pointer', fontSize: '14px',
-                                                transition: 'background 0.15s'
-                                            }}
-                                            className="hover-bg"
-                                        >
-                                            <Trash2 size={16} /> Delete
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <div className="video-grid">
+                {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => <VideoSkeleton key={i} />)
+                ) : videos.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '100px 24px', color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>
+                        <p style={{ fontSize: '20px', marginBottom: '8px' }}>{t('noVideos')}</p>
+                    </div>
+                ) : (
+                    videos.map(video => (
+                        <VideoCard
+                            key={video.id}
+                            video={video}
+                            isOwner={true}
+                            onEdit={() => openEditModal(video)}
+                            onDelete={() => setDeletingVideoId(video.id)}
+                        />
+                    ))
+                )}
+            </div>
 
             <Modal isOpen={!!editingVideo} onClose={() => setEditingVideo(null)} title={t('edit')}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

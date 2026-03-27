@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Flag, Trash2, XCircle, Send, X, Check } from 'lucide-react';
+import ReportSkeleton from '../components/ReportSkeleton';
+import Skeleton from '../components/Skeleton';
 
 const API = 'http://127.0.0.1:5000/api/admin';
 
@@ -51,7 +53,9 @@ export default function Reports() {
             <div className="page-header">
                 <div>
                     <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Reports</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>Review and manage reported videos</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>
+                        {loading ? <Skeleton width="100px" height="13px" /> : "Review and manage reported videos"}
+                    </p>
                 </div>
             </div>
 
@@ -65,7 +69,7 @@ export default function Reports() {
                     ))}
                 </div>
 
-                {loading ? <p style={{ color: 'var(--text-secondary)' }}>Loading reports...</p> : reports.length === 0 ? (
+                {loading ? <ReportSkeleton /> : reports.length === 0 ? (
                     <div className="empty-state">
                         <Flag size={48} />
                         <p>No reports found</p>

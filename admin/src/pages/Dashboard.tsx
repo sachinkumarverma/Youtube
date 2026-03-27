@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Video, MessageSquare, Flag, Heart, TrendingUp, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Video, MessageSquare, Flag, TrendingUp, Activity, FileText } from 'lucide-react';
+import Skeleton from '../components/Skeleton';
 
 const API = 'http://127.0.0.1:5000/api/admin';
 
@@ -15,18 +17,27 @@ interface Stats {
 export default function Dashboard() {
     const [stats, setStats] = useState<Stats | null>(null);
     const [recentLogs, setRecentLogs] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        axios.get(`${API}/stats`).then(r => setStats(r.data)).catch(console.error);
-        axios.get(`${API}/logs?limit=8`).then(r => setRecentLogs(r.data.logs || [])).catch(console.error);
+        setLoading(true);
+        Promise.all([
+            axios.get(`${API}/stats`),
+            axios.get(`${API}/logs?limit=8`)
+        ]).then(([sRes, lRes]) => {
+            setStats(sRes.data);
+            setRecentLogs(lRes.data.logs || []);
+        }).catch(console.error)
+            .finally(() => setLoading(false));
     }, []);
 
     const cards = [
-        { label: 'Total Users', value: stats?.totalUsers, icon: Users, color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
-        { label: 'Total Videos', value: stats?.totalVideos, icon: Video, color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
-        { label: 'Comments', value: stats?.totalComments, icon: MessageSquare, color: '#eab308', bg: 'rgba(234,179,8,0.12)' },
-        { label: 'Pending Reports', value: stats?.pendingReports, icon: Flag, color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
-        { label: 'Subscriptions', value: stats?.totalSubscriptions, icon: Heart, color: '#a855f7', bg: 'rgba(168,85,247,0.12)' },
+        { label: 'Total Users', value: stats?.totalUsers, icon: Users, color: '#6366f1', bg: 'rgba(99,102,241,0.12)', path: '/users' },
+        { label: 'Total Videos', value: stats?.totalVideos, icon: Video, color: '#22c55e', bg: 'rgba(34,197,94,0.12)', path: '/videos' },
+        { label: 'Comments', value: stats?.totalComments, icon: MessageSquare, color: '#eab308', bg: 'rgba(234,179,8,0.12)', path: '/comments' },
+        { label: 'Pending Reports', value: stats?.pendingReports, icon: Flag, color: '#ef4444', bg: 'rgba(239,68,68,0.12)', path: '/reports' },
+        { label: 'Platform Activity', value: 'View Logs', icon: Activity, color: '#a855f7', bg: 'rgba(168,85,247,0.12)', path: '/logs' },
     ];
 
     const getActionColor = (action: string) => {
@@ -38,27 +49,29 @@ export default function Dashboard() {
     };
 
     return (
-        <>
+        <div className="animate-in">
             <div className="page-header">
                 <div>
-                    <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Dashboard</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>Platform overview and recent activity</p>
+                    <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Dashboard Overview</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>Monitor platform health and user engagement</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                    <Activity size={16} /> Live
+                    <Activity size={16} /> Live Data
                 </div>
             </div>
 
-            <div className="page-body animate-in">
+            <div className="page-body">
                 <div className="stats-grid" style={{ marginBottom: '32px' }}>
                     {cards.map(c => (
-                        <div key={c.label} className="stat-card">
+                        <div key={c.label} className="stat-card" onClick={() => navigate(c.path)} style={{ cursor: 'pointer' }}>
                             <div className="stat-icon" style={{ background: c.bg }}>
                                 <c.icon size={24} color={c.color} />
                             </div>
                             <div>
-                                <div className="stat-value">{c.value ?? '—'}</div>
-                                <div className="stat-label">{c.label}</div>
+                                <div className="stat-value" style={{ fontSize: '22px' }}>
+                                    {loading ? <Skeleton width="60px" height="24px" /> : (c.value ?? '—')}
+                                </div>
+                                <div className="stat-label" style={{ whiteSpace: 'nowrap' }}>{c.label}</div>
                             </div>
                         </div>
                     ))}
@@ -69,7 +82,18 @@ export default function Dashboard() {
                     <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Recent Activity</h3>
                 </div>
 
-                {recentLogs.length === 0 ? (
+                {loading ? (
+                    <div className="table-container">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} style={{ padding: '16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '20px' }}>
+                                <Skeleton width="100px" height="20px" />
+                                <Skeleton width="150px" height="20px" />
+                                <Skeleton width="80px" height="20px" />
+                                <Skeleton width="120px" height="20px" />
+                            </div>
+                        ))}
+                    </div>
+                ) : recentLogs.length === 0 ? (
                     <div className="empty-state">
                         <FileText size={48} />
                         <p>No activity yet</p>
@@ -107,10 +131,6 @@ export default function Dashboard() {
                     </div>
                 )}
             </div>
-        </>
+        </div>
     );
-}
-
-function FileText(props: any) {
-    return <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>;
 }

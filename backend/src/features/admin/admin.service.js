@@ -84,4 +84,28 @@ const reviewReport = async (reportId, data) => {
   return reportService.reviewReport(reportId, data);
 };
 
-module.exports = { getStats, getLogs, getAllVideos, deleteVideo, getReports, reviewReport };
+// Get all users
+const getUsers = async () => {
+  const result = await query(
+    `SELECT u.*, 
+            (SELECT COUNT(*) FROM videos WHERE user_id = u.id) as videos_count,
+            (SELECT COUNT(*) FROM subscriptions WHERE channel_id = u.id) as subscribers_count
+     FROM users u
+     ORDER BY u.created_at DESC`
+  );
+  return result.rows;
+};
+
+// Get all comments
+const getComments = async () => {
+  const result = await query(
+    `SELECT c.*, u.username, v.title as video_title
+     FROM comments c
+     JOIN users u ON c.user_id = u.id
+     JOIN videos v ON c.video_id = v.id
+     ORDER BY c.created_at DESC`
+  );
+  return result.rows;
+};
+
+module.exports = { getStats, getLogs, getAllVideos, deleteVideo, getReports, reviewReport, getUsers, getComments };

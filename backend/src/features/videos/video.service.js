@@ -64,13 +64,31 @@ const updateVideo = async (userId, videoId, { title, description, category }, fi
 
   let thumbnail_url = null;
   if (file) {
+    if (!file.buffer) throw { status: 400, message: 'Invalid file data' };
+    
     const fileName = `thumb_${videoId}_${Date.now()}.jpg`;
-    const { error: uploadError } = await supabase.storage
-      .from('thumbnails')
-      .upload(fileName, file.buffer, { contentType: file.mimetype });
-    if (uploadError) {
-      console.error('Supabase Upload Error:', uploadError);
-      throw { status: 500, message: `Storage Error: ${uploadError.message || 'Failed to upload to Supabase'}` };
+    console.log(`Uploading thumbnail to path: ${fileName}, size: ${file.buffer.length}, node: ${process.version}`);
+    
+    const axios = require('axios');
+    const supabaseUrl = process.env.SUPABASE_URL.trim();
+    const supabaseKey = process.env.SUPABASE_ANON_KEY.trim();
+    
+    try {
+      console.log('Attempting DIRECT AXIOS upload to Supabase Storage...');
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/thumbnails/${fileName}`;
+      
+      await axios.post(uploadUrl, file.buffer, {
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'apikey': supabaseKey,
+          'Content-Type': file.mimetype,
+          'x-upsert': 'true'
+        }
+      });
+      console.log('Axios Direct Upload Successful!');
+    } catch (err) {
+      console.error('Direct Axios Storage Error:', err.response?.data || err.message);
+      throw { status: 500, message: `Storage Error (Direct): ${err.response?.data?.error || err.message}` };
     }
     const { data } = supabase.storage.from('thumbnails').getPublicUrl(fileName);
     thumbnail_url = data.publicUrl;

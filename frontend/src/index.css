@@ -35,6 +35,17 @@ body.light {
   box-sizing: border-box;
 }
 
+button:active,
+.sidebar-link:active,
+.category-pill:active,
+.icon-btn:active,
+[role="button"]:active,
+.btn:active {
+  transform: scale(0.96) !important;
+  opacity: 0.8;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
 body {
   font-family: var(--font-main);
   background-color: var(--bg-primary);
@@ -407,6 +418,26 @@ body {
 
 .animate-fade-in {
   animation: fadeIn 0.4s ease forwards;
+}
+
+/* Skeleton Animation */
+.skeleton-base {
+  background: linear-gradient(90deg,
+      var(--bg-secondary) 25%,
+      var(--bg-hover) 50%,
+      var(--bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite linear;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Spinner for buttons */

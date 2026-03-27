@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { CheckCircle2, Info, PlayCircle, Edit3, Camera, X, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../i18n';
-import { formatDuration } from '../utils/format';
 import { supabase } from '../lib/supabase';
 import { CATEGORIES } from '../constants';
+import VideoCard from '../components/VideoCard';
 
 interface ChannelData {
     user: {
@@ -258,24 +258,13 @@ export default function ChannelDetail() {
                             </div>
                         ) : (
                             videos.map(video => (
-                                <div key={video.id} style={{ position: 'relative' }}>
-                                    <Link to={`/video/${video.id}`} className="video-card" style={{ textDecoration: 'none' }}>
-                                        <div className="thumbnail-wrapper">
-                                            <img src={video.thumbnail_url || 'https://via.placeholder.com/400x225'} alt={video.title} className="thumbnail-img" />
-                                            <span className="video-duration">{formatDuration(video.duration)}</span>
-                                        </div>
-                                        <div className="video-details" style={{ marginTop: '12px' }}>
-                                            <h3 className="video-title">{video.title}</h3>
-                                            <p className="video-stats">{video.views} {t('views')} • {new Date(video.created_at).toLocaleDateString()}</p>
-                                        </div>
-                                    </Link>
-                                    {isOwner && (
-                                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                            <button onClick={() => { setEditingVideo(video); setIsVideoEditModalOpen(true); }} style={{ flex: 1, padding: '6px', background: 'var(--bg-hover)', border: 'none', color: 'var(--text-primary)', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}>{t('edit')}</button>
-                                            <button onClick={() => setDeleteVideoId(video.id)} style={{ flex: 1, padding: '6px', background: 'rgba(255,0,0,0.1)', border: 'none', color: '#ff4444', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }}>{t('delete')}</button>
-                                        </div>
-                                    )}
-                                </div>
+                                <VideoCard
+                                    key={video.id}
+                                    video={video}
+                                    isOwner={isOwner}
+                                    onEdit={() => { setEditingVideo(video); setIsVideoEditModalOpen(true); }}
+                                    onDelete={() => setDeleteVideoId(video.id)}
+                                />
                             ))
                         )}
                     </div>

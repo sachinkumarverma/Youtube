@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Trash2, Video, X, AlertTriangle } from 'lucide-react';
+import TableSkeleton from '../components/TableSkeleton';
+import Skeleton from '../components/Skeleton';
 
 const API = 'http://127.0.0.1:5000/api/admin';
 
@@ -60,7 +62,9 @@ export default function Videos() {
             <div className="page-header">
                 <div>
                     <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Video Management</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>{videos.length} total videos</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>
+                        {loading ? <Skeleton width="80px" height="13px" /> : `${videos.length} total videos`}
+                    </p>
                 </div>
             </div>
 
@@ -71,7 +75,9 @@ export default function Videos() {
                     <input className="input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by title or channel..." style={{ paddingLeft: '42px' }} />
                 </div>
 
-                {loading ? <p style={{ color: 'var(--text-secondary)' }}>Loading videos...</p> : filtered.length === 0 ? (
+                {loading ? (
+                    <TableSkeleton cols={8} rows={8} />
+                ) : filtered.length === 0 ? (
                     <div className="empty-state">
                         <Video size={48} />
                         <p>No videos found</p>

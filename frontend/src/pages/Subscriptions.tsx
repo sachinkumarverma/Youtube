@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Bell, BellOff, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '../i18n';
+import ChannelSkeleton from '../components/ChannelSkeleton';
 
 export default function Subscriptions() {
     const [subscriptions, setSubscriptions] = useState<any[]>([]);
@@ -11,6 +12,7 @@ export default function Subscriptions() {
 
     useEffect(() => {
         const fetchSubscriptions = async () => {
+            setLoading(true);
             try {
                 const token = localStorage.getItem('token');
                 const res = await axios.get('http://127.0.0.1:5000/api/user/subscriptions', {
@@ -38,13 +40,15 @@ export default function Subscriptions() {
         } catch (err) { console.error(err); }
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
-
     return (
         <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
             <h1 style={{ fontSize: '24px', marginBottom: '32px', fontWeight: 'bold' }}>{t('subscriptions')}</h1>
 
-            {subscriptions.length === 0 ? (
+            {loading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {Array.from({ length: 5 }).map((_, i) => <ChannelSkeleton key={i} />)}
+                </div>
+            ) : subscriptions.length === 0 ? (
                 <div style={{ textAlign: 'center', marginTop: '100px', color: 'var(--text-secondary)' }}>
                     <p style={{ fontSize: '18px' }}>{t('noSubscriptions')}</p>
                 </div>

@@ -32,5 +32,14 @@ router.get('/videos', adminController.getVideos);
 router.delete('/videos/:id', adminController.deleteVideo);
 router.get('/reports', adminController.getReports);
 router.put('/reports/:id/review', adminController.reviewReport);
+router.get('/users', adminController.getUsers);
+router.get('/comments', adminController.getComments);
+router.delete('/comments/:id', async (req, res, next) => {
+  try {
+    const { query } = require('../../lib/db');
+    await query('DELETE FROM comments WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (error) { next(error); }
+});
 
 module.exports = router;

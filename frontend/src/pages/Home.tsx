@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
-import { formatDuration } from '../utils/format';
+import VideoSkeleton from '../components/VideoSkeleton';
+import VideoCard from '../components/VideoCard';
 
 interface Video {
   id: string;
@@ -19,10 +20,12 @@ interface Video {
 
 const Home = () => {
   const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
   useEffect(() => {
     const fetchVideos = async () => {
+      setLoading(true);
       try {
         const res = await axios.get('http://127.0.0.1:5000/api/videos');
         let fetchedVideos = res.data;
@@ -45,6 +48,8 @@ const Home = () => {
         setVideos(fetchedVideos);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchVideos();
@@ -53,17 +58,6 @@ const Home = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q')?.toLowerCase() || '';
   const navigate = useNavigate();
-
-  const formatViews = (views: number) => {
-    if (views >= 1000000) return (views / 1000000).toFixed(1) + 'M';
-    if (views >= 1000) return (views / 1000).toFixed(1) + 'K';
-    return views;
-  };
-
-  const getDaysAgo = (dateStr: string) => {
-    const days = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / (1000 * 3600 * 24));
-    return days === 0 ? t('today') : `${days} ${t('daysAgo')}`;
-  };
 
   const filteredVideos = videos.filter((v: any) => {
     if (!query || query === 'all') return true;
@@ -87,34 +81,17 @@ const Home = () => {
       </div>
 
       <div className="video-grid">
-        {filteredVideos.map((video: any) => (
-          <div key={video.id} className="video-card-container">
-            <Link to={`/video/${video.id}`} className="video-card" style={{ textDecoration: 'none' }}>
-              <div className="thumbnail-wrapper">
-                <img src={video.thumbnail_url || 'https://via.placeholder.com/400x225'} alt={video.title} className="thumbnail-img" />
-                <span className="video-duration">{formatDuration(video.duration)}</span>
-              </div>
-            </Link>
-            <div className="video-card-info" style={{ display: 'flex', gap: '12px', padding: '12px 0' }}>
-              <Link to={`/channel/${video.user_id}`} className="avatar" style={{ overflow: 'hidden', background: video.user.avatar_url ? 'transparent' : '', cursor: 'pointer', textDecoration: 'none', color: 'inherit', width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0 }}>
-                {video.user.avatar_url ? (
-                  <img src={video.user.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-secondary)', fontWeight: 'bold' }}>
-                    {video.user.username.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </Link>
-              <div className="video-details" style={{ flex: 1 }}>
-                <Link to={`/video/${video.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <h3 className="video-title" style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', lineBreak: 'anywhere' }}>{video.title}</h3>
-                </Link>
-                <Link to={`/channel/${video.user_id}`} className="channel-name" style={{ textDecoration: 'none', color: 'var(--text-secondary)', display: 'block', fontSize: '14px', marginTop: '4px' }}>{video.user.username}</Link>
-                <span className="video-stats" style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{formatViews(video.views)} {t('views')} • {getDaysAgo(video.created_at)}</span>
-              </div>
-            </div>
+        {loading ? (
+          Array.from({ length: 12 }).map((_, i) => <VideoSkeleton key={i} />)
+        ) : filteredVideos.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '100px 24px', color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>
+            <p>{t('noVideos')}</p>
           </div>
-        ))}
+        ) : (
+          filteredVideos.map((video: any) => (
+            <VideoCard key={video.id} video={video} />
+          ))
+        )}
       </div>
     </div>
   );

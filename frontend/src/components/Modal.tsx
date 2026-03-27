@@ -22,7 +22,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 99999,
             backdropFilter: 'blur(4px)',
             padding: '24px'
         }}>

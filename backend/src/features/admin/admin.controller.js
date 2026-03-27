@@ -61,4 +61,18 @@ const reviewReport = async (req, res, next) => {
   }
 };
 
-module.exports = { getStats, getLogs, getVideos, deleteVideo, getReports, reviewReport };
+const getUsers = async (req, res, next) => {
+  try {
+    const users = await adminService.getUsers();
+    res.json(users);
+  } catch (error) { next(error); }
+};
+
+const getComments = async (req, res, next) => {
+  try {
+    const comments = await adminService.getComments();
+    res.json(comments);
+  } catch (error) { next(error); }
+};
+
+module.exports = { getStats, getLogs, getVideos, deleteVideo, getReports, reviewReport, getUsers, getComments };

@@ -2,8 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { ThumbsUp, Share2, SkipBack, SkipForward, Clock, UserPlus, UserMinus, User, Flag, Check } from 'lucide-react';
-import Modal from '../components/Modal';
+import ShareModal from '../components/ShareModal';
+import ReportModal from '../components/ReportModal';
+import { useToast } from '../components/Toast';
 import { useTranslation } from '../i18n';
+import VideoPlayerSkeleton from '../components/VideoPlayerSkeleton';
 
 interface Comment {
     id: string;
@@ -37,14 +40,13 @@ export default function VideoPlayer() {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [showShareModal, setShowShareModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
-    const [selectedReason, setSelectedReason] = useState('');
-    const [reportSubmitted, setReportSubmitted] = useState(false);
     const { t } = useTranslation();
     const videoRef = useRef<HTMLVideoElement>(null);
     const viewedRef = useRef<string | null>(null);
 
     useEffect(() => {
         const fetchVideo = async () => {
+            setLoading(true);
             try {
                 const response = await axios.get(`http://127.0.0.1:5000/api/videos/${id}`);
                 setVideo(response.data);
@@ -118,22 +120,6 @@ export default function VideoPlayer() {
         } catch (err: any) { alert(err.response?.data?.error || 'Failed to subscribe'); }
     };
 
-    const submitReport = async () => {
-        if (!selectedReason) return;
-        const token = localStorage.getItem('token');
-        if (!token) return alert('Please login to report!');
-        try {
-            await axios.post(`http://127.0.0.1:5000/api/reports/${id}`, { reason: selectedReason }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setReportSubmitted(true);
-            setTimeout(() => { setShowReportModal(false); setReportSubmitted(false); setSelectedReason(''); }, 2000);
-        } catch (err) {
-            console.error(err);
-            alert('Failed to submit report');
-        }
-    };
-
     const handleComment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!commentText.trim()) return;
@@ -157,16 +143,18 @@ export default function VideoPlayer() {
         }
     };
 
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(window.location.href);
-        alert('URL copied to clipboard!');
-    };
+    if (loading) return <VideoPlayerSkeleton />;
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
-    if (!video) return <div style={{ padding: '40px', textAlign: 'center' }}>Video not found.</div>;
+    if (!video) return (
+        <div style={{ padding: '100px 40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <h2 style={{ fontSize: '24px', marginBottom: '12px' }}>Video not found</h2>
+            <p>The video you're looking for might have been removed or doesn't exist.</p>
+            <Link to="/" style={{ display: 'inline-block', marginTop: '24px', padding: '12px 24px', background: 'var(--accent)', color: '#fff', borderRadius: '24px', fontWeight: 'bold', textDecoration: 'none' }}>Go Home</Link>
+        </div>
+    );
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
 
             <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
                 <video ref={videoRef} src={video.video_url} controls autoPlay style={{ width: '100%', height: '100%', outline: 'none' }} />
@@ -274,40 +262,18 @@ export default function VideoPlayer() {
                 </div>
             </div>
 
-            <Modal isOpen={showShareModal} onClose={() => setShowShareModal(false)} title={t('share')}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <p style={{ color: 'var(--text-secondary)' }}>Copy the link below to share this video:</p>
-                    <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-primary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                        <input readOnly value={window.location.href} style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none' }} />
-                        <button onClick={copyToClipboard} style={{ background: '#3ea6ff', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>{t('copy')}</button>
-                    </div>
-                </div>
-            </Modal>
+            <ShareModal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                videoId={video.id}
+                videoTitle={video.title}
+            />
 
-            <Modal isOpen={showReportModal} onClose={() => { setShowReportModal(false); setReportSubmitted(false); setSelectedReason(''); }} title="Report Video">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {reportSubmitted ? (
-                        <div style={{ textAlign: 'center', padding: '24px' }}>
-                            <Check size={48} color="#34a853" style={{ marginBottom: '12px' }} />
-                            <p style={{ fontSize: '16px', fontWeight: '600' }}>Thank you for reporting</p>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Our team will review this video.</p>
-                        </div>
-                    ) : (
-                        <>
-                            <p style={{ color: 'var(--text-secondary)' }}>Why are you reporting this video?</p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {['Spam or misleading', 'Sexual content', 'Violent or repulsive content', 'Harassment or bullying', 'Harmful or dangerous acts', 'Copyright violation'].map(reason => (
-                                    <label key={reason} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '10px 12px', borderRadius: '8px', background: selectedReason === reason ? 'rgba(62, 166, 255, 0.1)' : 'transparent', border: selectedReason === reason ? '1px solid #3ea6ff' : '1px solid transparent', transition: 'all 0.2s' }}>
-                                        <input type="radio" name="report" value={reason} checked={selectedReason === reason} onChange={(e) => setSelectedReason(e.target.value)} style={{ accentColor: '#3ea6ff' }} />
-                                        <span>{reason}</span>
-                                    </label>
-                                ))}
-                            </div>
-                            <button onClick={submitReport} disabled={!selectedReason} style={{ padding: '12px', background: selectedReason ? '#ff4444' : 'var(--bg-hover)', color: selectedReason ? '#fff' : 'var(--text-secondary)', border: 'none', borderRadius: '8px', cursor: selectedReason ? 'pointer' : 'not-allowed', fontWeight: 'bold', marginTop: '8px', transition: 'all 0.2s' }}>Submit Report</button>
-                        </>
-                    )}
-                </div>
-            </Modal>
+            <ReportModal
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                videoId={video.id}
+            />
         </div>
     );
 }

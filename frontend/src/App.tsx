@@ -11,6 +11,7 @@ import Subscriptions from './pages/Subscriptions';
 import ChannelDetail from './pages/ChannelDetail';
 import Upload from './pages/Upload';
 import './index.css';
+import { ToastProvider } from './components/Toast';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -18,36 +19,38 @@ function App() {
   const user = userStr ? JSON.parse(userStr) : null;
 
   return (
-    <Router>
-      <div className="app-container">
-        <Navbar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <div className="main-wrapper">
-          <Sidebar isOpen={isSidebarOpen} />
-          <main className="page-content">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/video/:id" element={<VideoPlayer />} />
-              <Route path="/explore" element={<VideoList endpoint="videos/explore" title="Explore" />} />
-              <Route path="/trending" element={<VideoList endpoint="videos/trending" title="Trending" />} />
-              <Route path="/gaming" element={<VideoList endpoint="videos?category=Gaming" title="Gaming" />} />
-              <Route path="/subscriptions" element={<Subscriptions />} />
-              <Route path="/channel/:id" element={<ChannelDetail />} />
-              <Route path="/upload" element={<Upload />} />
+    <ToastProvider>
+      <Router>
+        <div className="app-container">
+          <Navbar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+          <div className="main-wrapper">
+            <Sidebar isOpen={isSidebarOpen} />
+            <main className="page-content">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/video/:id" element={<VideoPlayer />} />
+                <Route path="/explore" element={<VideoList endpoint="videos/explore" title="Explore" />} />
+                <Route path="/trending" element={<VideoList endpoint="videos/trending" title="Trending" />} />
+                <Route path="/gaming" element={<VideoList endpoint="videos?category=Gaming" title="Gaming" />} />
+                <Route path="/subscriptions" element={<Subscriptions />} />
+                <Route path="/channel/:id" element={<ChannelDetail />} />
+                <Route path="/upload" element={<Upload />} />
 
-              <Route path="/history" element={<VideoList endpoint="user/history" title="History" />} />
-              <Route path="/watch-later" element={<VideoList endpoint="user/watch-later" title="Watch Later" />} />
-              <Route path="/liked" element={<VideoList endpoint="user/liked" title="Liked Videos" />} />
-              <Route
-                path="/channel"
-                element={user ? <Navigate to={`/channel/${user.id}`} /> : <Navigate to="/login" />}
-              />
-            </Routes>
-          </main>
+                <Route path="/history" element={<VideoList endpoint="user/history" title="History" />} />
+                <Route path="/watch-later" element={<VideoList endpoint="user/watch-later" title="Watch Later" />} />
+                <Route path="/liked" element={<VideoList endpoint="user/liked" title="Liked Videos" />} />
+                <Route
+                  path="/channel"
+                  element={user ? <Navigate to={`/channel/${user.id}`} /> : <Navigate to="/login" />}
+                />
+              </Routes>
+            </main>
+          </div>
         </div>
-      </div>
-    </Router>
+      </Router>
+    </ToastProvider>
   );
 }
 
