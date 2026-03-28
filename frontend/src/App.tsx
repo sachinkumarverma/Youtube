@@ -24,8 +24,11 @@ function App() {
         <div className="app-container">
           <Navbar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
           <div className="main-wrapper">
+            {isSidebarOpen && (
+              <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+            )}
             <Sidebar isOpen={isSidebarOpen} />
-            <main className="page-content">
+            <main className="page-content" onClick={() => window.innerWidth <= 768 && isSidebarOpen && setIsSidebarOpen(false)}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />

@@ -246,7 +246,7 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
           </button>
           <Link to="/" className="logo">
             <Video className="logo-icon" size={28} />
-            ViewTube
+            <span className="logo-text">ViewTube</span>
           </Link>
         </div>
 
