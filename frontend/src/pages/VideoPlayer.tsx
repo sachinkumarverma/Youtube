@@ -4,9 +4,9 @@ import axios from 'axios';
 import { ThumbsUp, Share2, SkipBack, SkipForward, Clock, UserPlus, UserMinus, User, Flag, Check } from 'lucide-react';
 import ShareModal from '../components/ShareModal';
 import ReportModal from '../components/ReportModal';
-import { useToast } from '../components/Toast';
 import { useTranslation } from '../i18n';
 import VideoPlayerSkeleton from '../components/VideoPlayerSkeleton';
+import AISummaryPanel from '../components/AISummaryPanel';
 
 interface Comment {
     id: string;
@@ -71,8 +71,13 @@ export default function VideoPlayer() {
                 }
 
                 if (viewedRef.current !== id) {
-                    await axios.put(`http://127.0.0.1:5000/api/videos/${id}/view`, {});
-                    viewedRef.current = id || null;
+                    viewedRef.current = id || null; // Synchronously mark as viewed to prevent double-firing in StrictMode
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                        axios.put(`http://127.0.0.1:5000/api/videos/${id}/view`, {}, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        }).catch(console.error);
+                    }
                 }
             } catch (err) {
                 console.error(err);
@@ -86,13 +91,29 @@ export default function VideoPlayer() {
     const handleLike = async () => {
         const token = localStorage.getItem('token');
         if (!token) return alert('Please login to like!');
+
+        // Optimistic update using current state
+        const willBeLiked = !isLiked;
+        setIsLiked(willBeLiked);
+        setLikesCount(prev => willBeLiked ? prev + 1 : Math.max(0, prev - 1));
+
         try {
             const res = await axios.post(`http://127.0.0.1:5000/api/videos/${id}/like`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            // Sync with server truth
             setIsLiked(res.data.liked);
-            setLikesCount(prev => res.data.liked ? prev + 1 : prev - 1);
+            if (res.data.liked !== willBeLiked) {
+                // Server disagreed — revert the count change and apply correct one
+                setLikesCount(prev => res.data.liked
+                    ? prev + (willBeLiked ? 0 : 1)
+                    : Math.max(0, prev - (willBeLiked ? 1 : 0))
+                );
+            }
         } catch (err) {
+            // Revert on error
+            setIsLiked(!willBeLiked);
+            setLikesCount(prev => willBeLiked ? Math.max(0, prev - 1) : prev + 1);
             console.error(err);
         }
     };
@@ -157,7 +178,13 @@ export default function VideoPlayer() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
 
             <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
-                <video ref={videoRef} src={video.video_url} controls autoPlay style={{ width: '100%', height: '100%', outline: 'none' }} />
+                <video
+                    ref={videoRef}
+                    src={video.video_url}
+                    controls
+                    autoPlay
+                    style={{ width: '100%', height: '100%', outline: 'none' }}
+                />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -212,6 +239,15 @@ export default function VideoPlayer() {
                         {video.description}
                     </div>
                 )}
+
+                {/* ── AI Features Section ── */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
+                    <AISummaryPanel
+                        videoTitle={video.title}
+                        videoDescription={video.description}
+                        channelName={video.user.username}
+                    />
+                </div>
             </div>
 
             <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>

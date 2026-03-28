@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import { Shield, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 
 const API = 'http://127.0.0.1:5000/api/admin/auth';
 
@@ -38,9 +38,7 @@ export default function Login() {
         <div className="auth-container">
             <div className="auth-card animate-in">
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'grid', placeItems: 'center' }}>
-                        <Shield size={28} color="#fff" />
-                    </div>
+                    <img src="/logo.png" alt="ViewTube Logo" style={{ width: '80px', height: 'auto', objectFit: 'contain' }} />
                 </div>
                 <h1>{isRegister ? 'Create Admin Account' : 'Admin Portal'}</h1>
                 <p>{isRegister ? 'Register with your admin secret key' : 'Sign in to manage your platform'}</p>

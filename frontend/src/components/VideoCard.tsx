@@ -35,18 +35,32 @@ export default function VideoCard({ video, isOwner, onEdit, onDelete }: VideoCar
     }
 
     const isVideoOwner = isOwner !== undefined ? isOwner : checkOwnership();
+    const hideChannelInfo = isOwner === true;
 
     return (
         <div className="video-card-container" style={{ position: 'relative' }}>
             <Link to={`/video/${video.id}`} className="video-card" style={{ textDecoration: 'none' }}>
                 <div className="thumbnail-wrapper">
-                    <img src={video.thumbnail_url || 'https://via.placeholder.com/400x225'} alt={video.title} className="thumbnail-img" />
+                    {video.thumbnail_url ? (
+                        <img src={video.thumbnail_url} alt={video.title} className="thumbnail-img" />
+                    ) : (
+                        <video
+                            src={`${video.video_url}#t=1.0`}
+                            className="thumbnail-img"
+                            preload="metadata"
+                            muted
+                            playsInline
+                            disablePictureInPicture
+                            controlsList="nodownload nofullscreen noplaybackrate"
+                            style={{ objectFit: 'cover', pointerEvents: 'none' }}
+                        />
+                    )}
                     <span className="video-duration">{formatDuration(video.duration)}</span>
                 </div>
             </Link>
 
             <div className="video-card-info" style={{ display: 'flex', gap: '12px', padding: '12px 0', position: 'relative' }}>
-                {!isVideoOwner && video.user && (
+                {!hideChannelInfo && video.user && (
                     <Link to={`/channel/${video.user_id}`} className="avatar" style={{ overflow: 'hidden', background: video.user.avatar_url ? 'transparent' : '', cursor: 'pointer', textDecoration: 'none', color: 'inherit', width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0 }}>
                         {video.user.avatar_url ? (
                             <img src={video.user.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -58,7 +72,7 @@ export default function VideoCard({ video, isOwner, onEdit, onDelete }: VideoCar
                     </Link>
                 )}
 
-                <div className="video-details" style={{ flex: 1, minWidth: 0 }}>
+                <div className="video-details" style={{ flex: 1, minWidth: 0, gap: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                         <Link to={`/video/${video.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}>
                             <h3 className="video-title" style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', lineBreak: 'anywhere' }}>{video.title}</h3>
@@ -75,11 +89,11 @@ export default function VideoCard({ video, isOwner, onEdit, onDelete }: VideoCar
                         </div>
                     </div>
 
-                    {!isVideoOwner && video.user && (
-                        <Link to={`/channel/${video.user_id}`} className="channel-name" style={{ textDecoration: 'none', color: 'var(--text-secondary)', display: 'block', fontSize: '14px', marginTop: '4px' }}>{video.user.username}</Link>
+                    {!hideChannelInfo && video.user && (
+                        <Link to={`/channel/${video.user_id}`} className="channel-name" style={{ textDecoration: 'none', color: 'var(--text-secondary)', display: 'block', fontSize: '14px', marginTop: '0' }}>{video.user.username}</Link>
                     )}
 
-                    <span className="video-stats" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
+                    <span className="video-stats" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '0', display: 'block' }}>
                         {formatViews(video.views)} {t('views')} • {getDaysAgo(video.created_at)}
                     </span>
                 </div>

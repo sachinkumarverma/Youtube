@@ -34,7 +34,7 @@ const getVideos = async (req, res, next) => {
 
 const deleteVideo = async (req, res, next) => {
   try {
-    const result = await adminService.deleteVideo(req.params.id);
+    const result = await adminService.deleteVideo(req.params.id, req.user.id);
     res.json(result);
   } catch (error) {
     next(error);
@@ -54,7 +54,7 @@ const getReports = async (req, res, next) => {
 const reviewReport = async (req, res, next) => {
   try {
     const { action, feedback } = req.body;
-    const result = await adminService.reviewReport(req.params.id, { action, feedback });
+    const result = await adminService.reviewReport(req.params.id, { action, feedback }, req.user.id);
     res.json(result);
   } catch (error) {
     next(error);

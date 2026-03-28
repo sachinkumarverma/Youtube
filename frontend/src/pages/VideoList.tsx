@@ -7,17 +7,29 @@ import VideoCard from '../components/VideoCard';
 export default function VideoList({ endpoint, title }: { endpoint: string, title: string }) {
     const [videos, setVideos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
 
     useEffect(() => {
         const fetchVideos = async () => {
-            setLoading(true);
+            const cached = sessionStorage.getItem(`videolist_${endpoint}`);
+            if (cached) {
+                setVideos(JSON.parse(cached));
+                setLoading(false);
+            } else {
+                setLoading(true);
+            }
             try {
                 const token = localStorage.getItem('token');
                 const res = await axios.get(`http://127.0.0.1:5000/api/${endpoint}`, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
-                setVideos(res.data);
+                let data = res.data;
+                if (title === 'History' || title === 'Liked Videos') {
+                    // Force latest-to-oldest sorting
+                    data.sort((a: any, b: any) => new Date(b.viewed_at || b.created_at).getTime() - new Date(a.viewed_at || a.created_at).getTime());
+                }
+                setVideos(data);
+                sessionStorage.setItem(`videolist_${endpoint}`, JSON.stringify(data));
             } catch (err) {
                 console.error(err);
             } finally {
@@ -31,10 +43,11 @@ export default function VideoList({ endpoint, title }: { endpoint: string, title
         const groups: { [key: string]: any[] } = {};
         videoList.forEach(video => {
             const viewedAt = video.viewed_at || video.created_at;
-            const date = new Date(viewedAt).toLocaleDateString(undefined, {
+            const locale = language === 'hi' ? 'hi-IN' : 'en-US';
+            const date = new Date(viewedAt).toLocaleDateString(locale, {
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             });
-            const today = new Date().toLocaleDateString(undefined, {
+            const today = new Date().toLocaleDateString(locale, {
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             });
             const displayDate = date === today ? t('today') : date;

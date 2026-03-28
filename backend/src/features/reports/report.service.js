@@ -7,7 +7,7 @@ const submitReport = async (userId, videoId, reason) => {
   // Log audit
   await query(
     'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
-    ['REPORT_SUBMITTED', 'video', videoId, null, JSON.stringify({ reason, reporter_id: userId })]
+    ['REPORT_SUBMITTED', 'video', videoId, userId, JSON.stringify({ reason })]
   );
   return reportRepo.create({ video_id: videoId, reporter_id: userId, reason });
 };
@@ -16,7 +16,7 @@ const getAllReports = async (filters) => {
   return reportRepo.findAll(filters);
 };
 
-const reviewReport = async (reportId, { action, feedback }) => {
+const reviewReport = async (reportId, { action, feedback, adminId }) => {
   const report = await reportRepo.findById(reportId);
   if (!report) throw { status: 404, message: 'Report not found' };
 
@@ -26,8 +26,8 @@ const reviewReport = async (reportId, { action, feedback }) => {
     await reportRepo.updateStatus(reportId, { status: 'deleted', admin_feedback: feedback || 'Video removed for policy violation' });
 
     await query(
-      'INSERT INTO audit_logs (action, entity_type, entity_id, details) VALUES ($1, $2, $3, $4)',
-      ['ADMIN_VIDEO_DELETED', 'video', report.video_id, JSON.stringify({ report_id: reportId, feedback })]
+      'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+      ['ADMIN_VIDEO_DELETED', 'video', report.video_id, adminId, JSON.stringify({ report_id: reportId, feedback })]
     );
 
   } else if (action === 'reject') {
@@ -41,8 +41,8 @@ const reviewReport = async (reportId, { action, feedback }) => {
     );
 
     await query(
-      'INSERT INTO audit_logs (action, entity_type, entity_id, details) VALUES ($1, $2, $3, $4)',
-      ['ADMIN_REPORT_REJECTED', 'report', reportId, JSON.stringify({ feedback })]
+      'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+      ['ADMIN_REPORT_REJECTED', 'report', reportId, adminId, JSON.stringify({ feedback })]
     );
 
   } else if (action === 'feedback') {
@@ -56,8 +56,8 @@ const reviewReport = async (reportId, { action, feedback }) => {
     );
 
     await query(
-      'INSERT INTO audit_logs (action, entity_type, entity_id, details) VALUES ($1, $2, $3, $4)',
-      ['ADMIN_FEEDBACK_SENT', 'video', report.video_id, JSON.stringify({ report_id: reportId, feedback })]
+      'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+      ['ADMIN_FEEDBACK_SENT', 'video', report.video_id, adminId, JSON.stringify({ report_id: reportId, feedback })]
     );
   }
 

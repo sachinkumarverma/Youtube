@@ -4,7 +4,9 @@ import { AlertTriangle, Upload } from 'lucide-react';
 import Modal from '../components/Modal';
 import { useTranslation } from '../i18n';
 import VideoSkeleton from '../components/VideoSkeleton';
+import Skeleton from '../components/Skeleton';
 import VideoCard from '../components/VideoCard';
+import AIThumbnailGenerator from '../components/AIThumbnailGenerator';
 
 export default function YourChannel() {
     const [videos, setVideos] = useState<any[]>([]);
@@ -22,11 +24,23 @@ export default function YourChannel() {
 
     const fetchVideos = async () => {
         try {
+            // Speed up rendering by using session cache instantly
+            const cached = sessionStorage.getItem('your_channel_videos');
+            if (cached) setVideos(JSON.parse(cached));
+
             const token = localStorage.getItem('token');
             const res = await axios.get(`http://127.0.0.1:5000/api/user/channel`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setVideos(res.data);
+
+            // Convert any literal "null" strings to actual null inside maps if needed
+            const validVideos = res.data.map((v: any) => ({
+                ...v,
+                thumbnail_url: v.thumbnail_url === 'null' ? null : v.thumbnail_url
+            }));
+
+            setVideos(validVideos);
+            sessionStorage.setItem('your_channel_videos', JSON.stringify(validVideos));
         } catch (err) {
             console.error(err);
         } finally {
@@ -88,10 +102,15 @@ export default function YourChannel() {
 
     return (
         <div style={{ padding: '24px', color: 'var(--text-primary)', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-            <h1 style={{ marginBottom: '24px', fontSize: '24px' }}>{t('yourChannel')}</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                {loading
+                    ? <Skeleton width="220px" height="30px" />
+                    : <h1 style={{ fontSize: '24px' }}>{t('yourChannel')}</h1>
+                }
+            </div>
             <div className="video-grid">
                 {loading ? (
-                    Array.from({ length: 4 }).map((_, i) => <VideoSkeleton key={i} />)
+                    Array.from({ length: 8 }).map((_, i) => <VideoSkeleton key={i} />)
                 ) : videos.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '100px 24px', color: 'var(--text-secondary)', gridColumn: '1 / -1' }}>
                         <p style={{ fontSize: '20px', marginBottom: '8px' }}>{t('noVideos')}</p>
@@ -114,8 +133,29 @@ export default function YourChannel() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{ fontSize: '14px', fontWeight: 'bold' }}>{t('upload')} Thumbnail</label>
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'start' }}>
-                            <div style={{ width: '160px', height: '90px', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
-                                <img src={newThumbnailFile ? URL.createObjectURL(newThumbnailFile) : (editThumbnail || 'https://via.placeholder.com/160x90')} alt="Thumbnail Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ width: '160px', height: '90px', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-primary)', border: '1px solid var(--border)', flexShrink: 0 }}>
+                                {newThumbnailFile ? (
+                                    <img
+                                        src={URL.createObjectURL(newThumbnailFile)}
+                                        alt="Thumbnail Preview"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                ) : (editThumbnail && editThumbnail !== 'null' && editThumbnail.trim() !== '') ? (
+                                    <img
+                                        src={editThumbnail}
+                                        alt="Thumbnail Preview"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                            target.parentElement!.style.background = 'var(--bg-hover)';
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-hover)', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                                        No thumbnail
+                                    </div>
+                                )}
                             </div>
                             <label style={{ padding: '8px 16px', background: 'var(--bg-hover)', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
                                 <Upload size={16} /> Choose File
@@ -137,7 +177,21 @@ export default function YourChannel() {
                             {['Music', 'Gaming', 'Spiritual', 'Entertainment', 'Education', 'Vlogs'].map(cat => <option key={cat} value={cat.toLowerCase()}>{cat}</option>)}
                         </select>
                     </div>
-                    <button onClick={handleUpdate} style={{ padding: '12px', background: 'var(--text-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', marginTop: '12px' }}>{t('saveChanges')}</button>
+
+                    {/* AI Thumbnail Generator inside edit modal */}
+                    <AIThumbnailGenerator
+                        videoTitle={editTitle || editingVideo?.title || 'My Video'}
+                        videoCategory={editCategory || 'General'}
+                        onSelectThumbnail={(blob, _previewUrl) => {
+                            const file = new File([blob], `ai_thumbnail_${Date.now()}.png`, { type: blob.type });
+                            setNewThumbnailFile(file);
+                        }}
+                    />
+
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+                        <button onClick={handleUpdate} style={{ flex: 1, padding: '12px', background: 'var(--text-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>{t('saveChanges')}</button>
+                        <button onClick={() => setEditingVideo(null)} style={{ flex: 1, padding: '12px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>{t('cancel')}</button>
+                    </div>
                 </div>
             </Modal>
 

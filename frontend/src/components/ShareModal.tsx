@@ -9,12 +9,12 @@ interface ShareModalProps {
     videoTitle: string;
 }
 
-export default function ShareModal({ isOpen, onClose, videoId, videoTitle }: ShareModalProps) {
+export default function ShareModal({ isOpen, onClose, videoId }: ShareModalProps) {
     const { showToast } = useToast();
     const shareUrl = `${window.location.origin}/video/${videoId}`;
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(`Watch "${videoTitle}" on ViewTube: ${shareUrl}`);
+        navigator.clipboard.writeText(shareUrl);
         showToast('Link copied to clipboard!', 'success');
         onClose();
     };

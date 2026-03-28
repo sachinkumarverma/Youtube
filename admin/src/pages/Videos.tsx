@@ -30,6 +30,12 @@ export default function Videos() {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [deleteTitle, setDeleteTitle] = useState('');
 
+    const formatDateIST = (dateStr: string) => {
+        if (!dateStr) return '—';
+        const utcDateStr = dateStr.includes('Z') || dateStr.includes('+') ? dateStr : `${dateStr.replace(' ', 'T')}Z`;
+        return new Date(utcDateStr).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+    };
+
     const fetchVideos = async () => {
         setLoading(true);
         try {
@@ -119,7 +125,7 @@ export default function Videos() {
                                                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>0</span>
                                             )}
                                         </td>
-                                        <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(v.created_at).toLocaleDateString()}</td>
+                                        <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{formatDateIST(v.created_at)}</td>
                                         <td>
                                             <button className="btn btn-danger btn-sm" onClick={() => { setDeleteId(v.id); setDeleteTitle(v.title); }}>
                                                 <Trash2 size={14} /> Remove

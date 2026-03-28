@@ -17,4 +17,13 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-module.exports = { authenticateToken };
+const authenticateAdmin = (req, res, next) => {
+  authenticateToken(req, res, () => {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Requires admin privileges' });
+    }
+    next();
+  });
+};
+
+module.exports = { authenticateToken, authenticateAdmin };

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useToast } from './Toast';
 import ShareModal from './ShareModal';
 import ReportModal from './ReportModal';
+import { useTranslation } from '../i18n';
 
 interface VideoMenuProps {
     videoId: string;
@@ -21,6 +22,7 @@ export default function VideoMenu({ videoId, videoTitle, isOwner, onEdit, onDele
     const [loading, setLoading] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const { showToast } = useToast();
+    const { t } = useTranslation();
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -98,10 +100,10 @@ export default function VideoMenu({ videoId, videoTitle, isOwner, onEdit, onDele
                     {isOwner && onEdit && onDelete && (
                         <>
                             <button onClick={(e) => { e.stopPropagation(); setIsOpen(false); onEdit(); }} className="menu-item">
-                                <Pencil size={16} /> Edit Video
+                                <Pencil size={16} /> {t('editVideo' as any)}
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); setIsOpen(false); onDelete(); }} className="menu-item" style={{ color: '#ff4444' }}>
-                                <Trash2 size={16} /> Delete Video
+                                <Trash2 size={16} /> {t('deleteVideo' as any)}
                             </button>
                             <div style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }} />
                         </>
@@ -115,17 +117,17 @@ export default function VideoMenu({ videoId, videoTitle, isOwner, onEdit, onDele
                         {loading ? (
                             <div className="spinner-small" />
                         ) : isWatchLater ? (
-                            <><Check size={16} color="var(--accent)" /> Remove from Watch Later</>
+                            <><Check size={16} color="var(--accent)" /> Remove from {t('watchLater')}</>
                         ) : (
-                            <><Watch size={16} /> Save to Watch Later</>
+                            <><Watch size={16} /> {t('saveWatchLater' as any)}</>
                         )}
                     </button>
 
                     <button onClick={(e) => { e.stopPropagation(); setIsOpen(false); setIsShareModalOpen(true); }} className="menu-item">
-                        <Share2 size={16} /> Share
+                        <Share2 size={16} /> {t('share')}
                     </button>
                     <button onClick={(e) => { e.stopPropagation(); setIsOpen(false); setIsReportModalOpen(true); }} className="menu-item">
-                        <Flag size={16} /> Report
+                        <Flag size={16} /> {t('report')}
                     </button>
                 </div>
             )}

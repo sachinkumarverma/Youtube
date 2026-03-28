@@ -37,6 +37,13 @@ const loginAdmin = async ({ email, password }) => {
   if (!valid) throw { status: 400, message: 'Invalid credentials' };
 
   const token = jwt.sign({ id: user.id, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+  // Log audit
+  await query(
+    'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+    ['ADMIN_LOGIN', 'user', user.id, user.id, JSON.stringify({ email: user.email })]
+  );
+
   return { token, user: { id: user.id, username: user.username, email: user.email } };
 };
 

@@ -65,11 +65,11 @@ const getAllVideos = async () => {
 };
 
 // Admin delete video
-const deleteVideo = async (videoId) => {
+const deleteVideo = async (videoId, adminId) => {
   // Log it
   await query(
-    'INSERT INTO audit_logs (action, entity_type, entity_id, details) VALUES ($1, $2, $3, $4)',
-    ['ADMIN_VIDEO_DELETED', 'video', videoId, JSON.stringify({ reason: 'Admin removal' })]
+    'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+    ['ADMIN_VIDEO_DELETED', 'video', videoId, adminId, JSON.stringify({ reason: 'Admin removal' })]
   );
   return videoService.adminDeleteVideo(videoId);
 };
@@ -80,8 +80,8 @@ const getReports = async (filters) => {
 };
 
 // Review report
-const reviewReport = async (reportId, data) => {
-  return reportService.reviewReport(reportId, data);
+const reviewReport = async (reportId, data, adminId) => {
+  return reportService.reviewReport(reportId, { ...data, adminId });
 };
 
 // Get all users

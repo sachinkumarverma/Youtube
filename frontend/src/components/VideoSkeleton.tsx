@@ -3,8 +3,8 @@ import Skeleton from './Skeleton';
 export default function VideoSkeleton() {
     return (
         <div className="video-card-container">
-            <div className="thumbnail-wrapper" style={{ border: 'none' }}>
-                <Skeleton borderRadius="16px" height="100%" />
+            <div className="thumbnail-wrapper" style={{ border: 'none', height: '200px' }}>
+                <Skeleton borderRadius="16px" width="100%" height="100%" />
             </div>
             <div className="video-card-info" style={{ display: 'flex', gap: '12px', padding: '12px 0' }}>
                 <Skeleton width="36px" height="36px" borderRadius="50%" />
@@ -17,3 +17,4 @@ export default function VideoSkeleton() {
         </div>
     );
 }
+

@@ -15,6 +15,20 @@ export default function Reports() {
     const [feedback, setFeedback] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
+    const formatDateIST = (dateStr: string) => {
+        if (!dateStr) return '—';
+        const utcDateStr = dateStr.includes('Z') || dateStr.includes('+') ? dateStr : `${dateStr.replace(' ', 'T')}Z`;
+        return new Date(utcDateStr).toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    };
+
     const fetchReports = async () => {
         setLoading(true);
         try {
@@ -81,7 +95,7 @@ export default function Reports() {
                                 <div style={{ flex: 1 }}>
                                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
                                         <span className={`badge ${getBadgeClass(r.status)}`}>{r.status}</span>
-                                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(r.created_at).toLocaleString()}</span>
+                                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{formatDateIST(r.created_at)}</span>
                                     </div>
                                     <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px' }}>
                                         Video: {r.video_title}

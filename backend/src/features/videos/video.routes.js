@@ -17,7 +17,7 @@ router.post('/', authenticateToken, videoController.create);
 
 // Param routes
 router.get('/:id', videoController.getById);
-router.put('/:id/view', videoController.incrementViews);
+router.put('/:id/view', authenticateToken, videoController.incrementViews);
 router.put('/:id', authenticateToken, upload.single('thumbnail'), videoController.update);
 router.delete('/:id', authenticateToken, videoController.remove);
 

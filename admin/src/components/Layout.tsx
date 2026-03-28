@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { BarChart3, Video, Flag, FileText, LogOut, Shield, Users, MessageSquare, X, Menu } from 'lucide-react';
+import { BarChart3, Video, Flag, FileText, LogOut, Shield, Users, MessageSquare, Menu } from 'lucide-react';
 
 export default function Layout() {
     const navigate = useNavigate();
     const location = useLocation();
     const admin = JSON.parse(localStorage.getItem('admin_user') || '{}');
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -16,54 +16,85 @@ export default function Layout() {
         window.location.href = '/login';
     };
 
-    const links = [
+    const mainLinks = [
         { path: '/', icon: BarChart3, label: 'Dashboard' },
         { path: '/users', icon: Users, label: 'Users' },
         { path: '/videos', icon: Video, label: 'Videos' },
         { path: '/comments', icon: MessageSquare, label: 'Comments' },
+    ];
+
+    const manageLinks = [
         { path: '/reports', icon: Flag, label: 'Reports' },
         { path: '/logs', icon: FileText, label: 'Audit Logs' },
     ];
 
     return (
-        <div className={`app ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-            <button className="mobile-toggle" onClick={toggleSidebar}>
-                {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-            <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-                <div className="sidebar-header">
-                    <Shield size={24} color="#6366f1" />
-                    <h1>ViewTube Admin</h1>
+        <div className="admin-app">
+            <header className="admin-navbar">
+                <div className="nav-left">
+                    <button className="icon-btn" onClick={toggleSidebar} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center' }}>
+                        <Menu size={24} />
+                    </button>
+                    <div className="branding" style={{ paddingLeft: '12px' }}>
+                        <Shield size={24} color="#6366f1" style={{ flexShrink: 0 }} />
+                        <h1 style={{ fontSize: '18px', fontWeight: 800, margin: 0, whiteSpace: 'nowrap', background: 'linear-gradient(135deg, var(--accent), #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                            ViewTube Admin
+                        </h1>
+                    </div>
                 </div>
-                <nav className="sidebar-nav">
-                    {links.map(l => (
+            </header>
+
+            <div className="admin-body">
+                <aside className={`sidebar ${isSidebarOpen ? '' : 'collapsed'}`}>
+                    {mainLinks.map(l => (
                         <button
                             key={l.path}
-                            className={`nav-link ${location.pathname === l.path ? 'active' : ''}`}
-                            onClick={() => { navigate(l.path); setIsSidebarOpen(false); }}
+                            className={`sidebar-link ${location.pathname === l.path ? 'active' : ''}`}
+                            onClick={() => navigate(l.path)}
                         >
-                            <l.icon size={20} />
-                            <span>{l.label}</span>
+                            <l.icon size={22} />
+                            <span className="sidebar-text">{l.label}</span>
                         </button>
                     ))}
-                </nav>
-                <div className="sidebar-footer">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: '14px' }}>
+
+                    <div className="sidebar-divider" />
+
+                    {!isSidebarOpen ? null : (
+                        <h3 className="sidebar-section-title">MANAGE</h3>
+                    )}
+                    {manageLinks.map(l => (
+                        <button
+                            key={l.path}
+                            className={`sidebar-link ${location.pathname === l.path ? 'active' : ''}`}
+                            onClick={() => navigate(l.path)}
+                        >
+                            <l.icon size={22} />
+                            <span className="sidebar-text">{l.label}</span>
+                        </button>
+                    ))}
+
+                    <div style={{ flex: 1 }} />
+
+                    <div className="sidebar-divider" />
+                    <div className="sidebar-user">
+                        <div className="sidebar-avatar">
                             {admin.username?.charAt(0)?.toUpperCase() || 'A'}
                         </div>
-                        <div>
-                            <div style={{ fontSize: '14px', fontWeight: 600 }}>{admin.username || 'Admin'}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{admin.email || ''}</div>
-                        </div>
+                        {isSidebarOpen && (
+                            <div style={{ overflow: 'hidden', flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{admin.username || 'Admin'}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{admin.email || ''}</div>
+                            </div>
+                        )}
                     </div>
-                    <button className="nav-link" onClick={handleLogout} style={{ color: 'var(--danger)' }}>
-                        <LogOut size={18} /> <span>Sign Out</span>
+                    <button className="sidebar-link logout-link" onClick={handleLogout}>
+                        <LogOut size={22} />
+                        <span className="sidebar-text">Sign Out</span>
                     </button>
+                </aside>
+                <div className="main-content" onClick={() => window.innerWidth <= 640 && isSidebarOpen && setIsSidebarOpen(false)}>
+                    <Outlet />
                 </div>
-            </aside>
-            <div className="main-content" onClick={() => isSidebarOpen && setIsSidebarOpen(false)}>
-                <Outlet />
             </div>
         </div>
     );

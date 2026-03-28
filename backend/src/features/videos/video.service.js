@@ -69,29 +69,46 @@ const updateVideo = async (userId, videoId, { title, description, category }, fi
     const fileName = `thumb_${videoId}_${Date.now()}.jpg`;
     console.log(`Uploading thumbnail to path: ${fileName}, size: ${file.buffer.length}, node: ${process.version}`);
     
-    const axios = require('axios');
     const supabaseUrl = process.env.SUPABASE_URL.trim();
     const supabaseKey = process.env.SUPABASE_ANON_KEY.trim();
     
     try {
-      console.log('Attempting DIRECT AXIOS upload to Supabase Storage...');
+      console.log('Attempting upload to Supabase Storage with cross-fetch...');
       const uploadUrl = `${supabaseUrl}/storage/v1/object/thumbnails/${fileName}`;
+      const fetch = require('cross-fetch');
       
-      await axios.post(uploadUrl, file.buffer, {
+      let fetchOptions = {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
           'apikey': supabaseKey,
           'Content-Type': file.mimetype,
           'x-upsert': 'true'
-        }
-      });
-      console.log('Axios Direct Upload Successful!');
+        },
+        body: file.buffer
+      };
+
+      if (uploadUrl.startsWith('https:')) {
+         const https = require('https');
+         fetchOptions.agent = new https.Agent({ family: 4 });
+      } else if (uploadUrl.startsWith('http:')) {
+         const http = require('http');
+         fetchOptions.agent = new http.Agent({ family: 4 });
+      }
+
+      const response = await fetch(uploadUrl, fetchOptions);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Upload failed with status ${response.status}: ${errText}`);
+      }
+      console.log('Upload Successful!');
+      
+      const { data } = supabase.storage.from('thumbnails').getPublicUrl(fileName);
+      thumbnail_url = data.publicUrl;
     } catch (err) {
-      console.error('Direct Axios Storage Error:', err.response?.data || err.message);
-      throw { status: 500, message: `Storage Error (Direct): ${err.response?.data?.error || err.message}` };
+      console.error('Storage Error:', err.message);
+      throw { status: 500, message: `Cannot fetch storage issue: ${err.message}` };
     }
-    const { data } = supabase.storage.from('thumbnails').getPublicUrl(fileName);
-    thumbnail_url = data.publicUrl;
   }
 
   const data = { title, description, category };

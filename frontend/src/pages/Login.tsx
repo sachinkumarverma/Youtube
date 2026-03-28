@@ -69,6 +69,9 @@ const Login = () => {
 
     return (
         <div style={{ maxWidth: '400px', margin: '4rem auto', padding: '2rem', background: 'var(--bg-secondary)', borderRadius: '8px', color: 'var(--text-primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                <img src="/logo.png" alt="ViewTube Logo" style={{ height: '64px', objectFit: 'contain' }} />
+            </div>
             <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Login to ViewTube</h2>
 
             {error && <div style={{ color: '#ff4444', marginBottom: '1rem', padding: '0.5rem', background: 'rgba(255,0,0,0.1)', borderRadius: '4px' }}>{error}</div>}

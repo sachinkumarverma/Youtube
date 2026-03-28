@@ -6,6 +6,9 @@ import { useTranslation } from '../i18n';
 import { supabase } from '../lib/supabase';
 import { CATEGORIES } from '../constants';
 import VideoCard from '../components/VideoCard';
+import Skeleton from '../components/Skeleton';
+import VideoSkeleton from '../components/VideoSkeleton';
+import AIThumbnailGenerator from '../components/AIThumbnailGenerator';
 
 interface ChannelData {
     user: {
@@ -50,7 +53,22 @@ export default function ChannelDetail() {
         const fetchChannel = async () => {
             if (!id) return;
             try {
+                // Speedy Cache check
+                const cached = sessionStorage.getItem(`channel_${id}`);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    setData(parsed);
+                    setEditUsername(parsed.user.username);
+                    setEditAbout(parsed.user.about || '');
+                    setAvatarPreview(parsed.user.avatar_url);
+                    setBannerPreview(parsed.user.banner_url);
+                }
+
                 const res = await axios.get(`http://127.0.0.1:5000/api/user/channel/${id}`);
+
+                // Cache the fresh data in background
+                sessionStorage.setItem(`channel_${id}`, JSON.stringify(res.data));
+
                 setData(res.data);
                 setEditUsername(res.data.user.username);
                 setEditAbout(res.data.user.about || '');
@@ -155,7 +173,33 @@ export default function ChannelDetail() {
         } catch (err) { console.error(err); }
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
+    if (loading) return (
+        <div style={{ padding: '0 0 40px 0', color: 'var(--text-primary)' }}>
+            <div style={{ height: '200px', width: '100%', background: 'var(--bg-secondary)', overflow: 'hidden' }}>
+                <Skeleton width="100%" height="100%" />
+            </div>
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginTop: '-40px', paddingBottom: '24px' }}>
+                    <div style={{ width: '128px', height: '128px', borderRadius: '50%', border: '4px solid var(--bg-primary)', overflow: 'hidden', background: 'var(--bg-secondary)', flexShrink: 0 }}>
+                        <Skeleton width="100%" height="100%" borderRadius="50%" />
+                    </div>
+                    <div style={{ marginTop: '50px', flex: 1 }}>
+                        <Skeleton width="220px" height="32px" />
+                        <div style={{ marginTop: '12px' }}><Skeleton width="300px" height="20px" /></div>
+                        <div style={{ marginTop: '16px' }}><Skeleton width="140px" height="40px" borderRadius="24px" /></div>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid var(--border)', marginBottom: '24px', paddingBottom: '12px' }}>
+                    <Skeleton width="80px" height="24px" />
+                    <Skeleton width="60px" height="24px" />
+                </div>
+                <div className="video-grid">
+                    {Array.from({ length: 8 }).map((_, i) => <VideoSkeleton key={i} />)}
+                </div>
+            </div>
+        </div>
+    );
+
     if (!data) return <div style={{ padding: '40px', textAlign: 'center' }}>Channel not found.</div>;
 
     const { user, videos, totalViews } = data;
@@ -176,18 +220,6 @@ export default function ChannelDetail() {
     // For first-time change, if lastUpdated is null, daysSinceUpdate is more than cooldownDays, avoiding the block.
     const isUsernameBlocked = isUsernameModified && daysSinceUpdate < cooldownDays;
     const isSaveDisabled = saving || !isSomethingModified || isUsernameBlocked;
-
-
-    console.log('Username Cooldown Stats:', {
-        editUsername,
-        currentUsername: user.username,
-        lastUpdated,
-        daysSinceUpdate,
-        isUsernameBlocked,
-        isSomethingModified,
-        isSaveDisabled
-    });
-
 
     return (
         <div style={{ padding: '0 0 40px 0', color: 'var(--text-primary)' }}>
@@ -469,11 +501,19 @@ function VideoEditModal({ video, onClose, onUpdate }: { video: any, onClose: () 
             <div className="modal-content" style={{ background: 'var(--bg-primary)', padding: '32px', borderRadius: '16px', width: '90%', maxWidth: '500px' }}>
                 <h2 style={{ marginBottom: '24px' }}>{t('edit')} {t('videos')}</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ height: '150px', background: 'var(--bg-secondary)', borderRadius: '8px', overflow: 'hidden' }}>
-                        <img src={thumbnailPreview || 'https://via.placeholder.com/400x225'} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ height: '150px', background: 'var(--bg-secondary)', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {(thumbnailPreview && thumbnailPreview !== 'null' && thumbnailPreview.trim() !== '') ? (
+                            <img src={thumbnailPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.parentElement!.innerHTML = '<div style="color:var(--text-secondary);font-size:14px;">No thumbnail</div>';
+                            }} />
+                        ) : (
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{t('noThumbnail' as any)}</div>
+                        )}
                     </div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#3ea6ff' }}>
-                        <Camera size={18} /> Change Thumbnail
+                        <Camera size={18} /> {t('changeThumbnail' as any)}
                         <input type="file" hidden accept="image/*" onChange={e => {
                             const file = e.target.files?.[0];
                             if (file) {
@@ -482,10 +522,21 @@ function VideoEditModal({ video, onClose, onUpdate }: { video: any, onClose: () 
                             }
                         }} />
                     </label>
-                    <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" style={{ padding: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: '8px' }} />
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description" style={{ padding: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: '8px', minHeight: '100px' }} />
+
+                    <AIThumbnailGenerator
+                        videoTitle={title || video.title || 'My Video'}
+                        videoCategory={category || video.category || 'General'}
+                        onSelectThumbnail={(blob, _previewUrl) => {
+                            const file = new File([blob], `ai_thumbnail_${Date.now()}.png`, { type: blob.type });
+                            setThumbnailFile(file);
+                            setThumbnailPreview(URL.createObjectURL(blob));
+                        }}
+                    />
+
+                    <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('titleReq' as any)} style={{ padding: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: '8px' }} />
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('videoDescPlaceholder' as any)} style={{ padding: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: '8px', minHeight: '100px' }} />
                     <select value={category} onChange={e => setCategory(e.target.value)} style={{ padding: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: '8px' }}>
-                        {['All', ...CATEGORIES].map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        {['All', ...CATEGORIES].map(cat => <option key={cat} value={cat}>{t(cat.toLowerCase() as any) || cat}</option>)}
                     </select>
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button onClick={handleSave} style={{ flex: 1, padding: '12px', background: 'var(--text-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>{t('saveChanges')}</button>

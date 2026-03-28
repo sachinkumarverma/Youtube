@@ -25,7 +25,14 @@ const Home = () => {
 
   useEffect(() => {
     const fetchVideos = async () => {
-      setLoading(true);
+      const cached = sessionStorage.getItem('home_videos');
+      if (cached) {
+        setVideos(JSON.parse(cached));
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+
       try {
         const res = await axios.get('http://127.0.0.1:5000/api/videos');
         let fetchedVideos = res.data;
@@ -46,6 +53,7 @@ const Home = () => {
           } catch (e) { console.error("Failed to fetch subscriptions for sorting", e); }
         }
         setVideos(fetchedVideos);
+        sessionStorage.setItem('home_videos', JSON.stringify(fetchedVideos));
       } catch (err) {
         console.error(err);
       } finally {

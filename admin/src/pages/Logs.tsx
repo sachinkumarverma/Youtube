@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FileText, Filter, RefreshCw, AlertCircle, User, Terminal, ChevronRight } from 'lucide-react';
+import { FileText, Filter, RefreshCw, AlertCircle, User, Terminal, ChevronRight, Download } from 'lucide-react';
 import TableSkeleton from '../components/TableSkeleton';
 
 const API = 'http://127.0.0.1:5000/api/admin';
@@ -10,16 +10,74 @@ export default function Logs() {
     const [loading, setLoading] = useState(true);
     const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
     const [filters, setFilters] = useState({ action: '', from: '', to: '' });
+    const [limit, setLimit] = useState(25);
     const [selectedLog, setSelectedLog] = useState<any>(null);
+    const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+    const cacheRef = useRef<Record<string, any>>({});
 
-    const fetchLogs = async (page = 1) => {
+    const formatDateIST = (dateStr: string) => {
+        if (!dateStr) return '—';
+        try {
+            const iso = (dateStr.includes('Z') || dateStr.includes('+')) ? dateStr : `${dateStr.replace(' ', 'T')}Z`;
+            const date = new Date(iso);
+
+            return new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: true
+            }).format(date);
+        } catch (e) { return dateStr; }
+    };
+
+    const downloadLogs = (format: 'json' | 'csv') => {
+        let content = '';
+        const filename = `audit_logs_${new Date().toISOString().split('T')[0]}.${format}`;
+
+        if (format === 'json') {
+            content = JSON.stringify(logs, null, 2);
+        } else {
+            const headers = ['Action', 'Entity Type', 'Entity ID', 'Initiator', 'Details', 'Time'];
+            const rows = logs.map(l => [
+                l.action,
+                l.entity_type,
+                l.entity_id || '',
+                l.username || 'System',
+                (typeof l.details === 'string' ? l.details : JSON.stringify(l.details)).replace(/"/g, '""'),
+                formatDateIST(l.created_at)
+            ]);
+            content = [headers, ...rows].map(r => `"${r.join('","')}"`).join('\n');
+        }
+
+        const blob = new Blob([content], { type: format === 'json' ? 'application/json' : 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+        setShowDownloadMenu(false);
+    };
+
+    const fetchLogs = async (page = 1, currentFilters = filters, currentLimit = limit) => {
         setLoading(true);
         try {
-            const params = new URLSearchParams({ page: page.toString(), limit: '25' });
-            if (filters.action) params.set('action', filters.action);
-            if (filters.from) params.set('from', filters.from);
-            if (filters.to) params.set('to', filters.to);
+            const params = new URLSearchParams({ page: page.toString(), limit: currentLimit.toString() });
+            if (currentFilters.action) params.set('action', currentFilters.action);
+            if (currentFilters.from) params.set('from', currentFilters.from);
+            if (currentFilters.to) params.set('to', currentFilters.to);
+
+            const cacheKey = params.toString();
+            if (cacheRef.current[cacheKey]) {
+                const cachedData = cacheRef.current[cacheKey];
+                setLogs(cachedData.logs || []);
+                setMeta({ total: cachedData.total, page: cachedData.page, totalPages: cachedData.totalPages });
+                setLoading(false);
+                return;
+            }
+
             const res = await axios.get(`${API}/logs?${params}`);
+            cacheRef.current[cacheKey] = res.data;
             setLogs(res.data.logs || []);
             setMeta({ total: res.data.total, page: res.data.page, totalPages: res.data.totalPages });
         } catch (err) { console.error(err); }
@@ -46,9 +104,22 @@ export default function Logs() {
                     <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Audit Trail & System Logs</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>{meta.total} events tracked globally</p>
                 </div>
-                <button className="btn btn-ghost" onClick={() => fetchLogs(meta.page)}>
-                    <RefreshCw size={16} className={loading ? 'spin' : ''} /> Refresh
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ position: 'relative' }}>
+                        <button className="btn btn-ghost" onClick={() => setShowDownloadMenu(!showDownloadMenu)}>
+                            <Download size={16} /> Download
+                        </button>
+                        {showDownloadMenu && (
+                            <div style={{ position: 'absolute', top: '100%', right: 0, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 10, minWidth: '120px', padding: '4px', marginTop: '4px' }}>
+                                <button className="btn btn-ghost btn-sm" style={{ width: '100%', textAlign: 'left', display: 'block' }} onClick={() => downloadLogs('json')}>JSON Format</button>
+                                <button className="btn btn-ghost btn-sm" style={{ width: '100%', textAlign: 'left', display: 'block' }} onClick={() => downloadLogs('csv')}>CSV Format</button>
+                            </div>
+                        )}
+                    </div>
+                    <button className="btn btn-ghost" onClick={() => fetchLogs(meta.page)}>
+                        <RefreshCw size={16} className={loading ? 'spin' : ''} /> Refresh
+                    </button>
+                </div>
             </div>
 
             <div className="page-body">
@@ -56,7 +127,11 @@ export default function Logs() {
                 <div className="filter-bar" style={{ marginBottom: '24px', background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
                     <div className="input-group">
                         <label className="input-label">Event Type</label>
-                        <select className="input" value={filters.action} onChange={e => setFilters(p => ({ ...p, action: e.target.value }))} style={{ minWidth: '220px' }}>
+                        <select className="input" value={filters.action} onChange={e => {
+                            const newAction = e.target.value;
+                            setFilters(p => ({ ...p, action: newAction }));
+                            fetchLogs(1, { ...filters, action: newAction });
+                        }} style={{ minWidth: '220px' }}>
                             <option value="">All Events</option>
                             <option value="SYSTEM_ERROR">System Errors</option>
                             <option value="REPORT_SUBMITTED">User Reports</option>
@@ -78,7 +153,11 @@ export default function Logs() {
                         <button className="btn btn-primary" onClick={() => fetchLogs(1)}>
                             <Filter size={14} /> Filter
                         </button>
-                        <button className="btn btn-ghost" onClick={() => { setFilters({ action: '', from: '', to: '' }); fetchLogs(1); }}>
+                        <button className="btn btn-ghost" onClick={() => {
+                            const emptyFilters = { action: '', from: '', to: '' };
+                            setFilters(emptyFilters);
+                            fetchLogs(1, emptyFilters);
+                        }}>
                             Reset
                         </button>
                     </div>
@@ -134,7 +213,7 @@ export default function Logs() {
                                                 </div>
                                             </td>
                                             <td style={{ fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                                                {new Date(l.created_at).toLocaleString()}
+                                                {formatDateIST(l.created_at)}
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <button className="btn btn-sm btn-ghost" onClick={() => setSelectedLog(l)}>
@@ -147,17 +226,57 @@ export default function Logs() {
                             </table>
                         </div>
 
-                        {/* Pagination */}
-                        {meta.totalPages > 1 && (
-                            <div className="pagination">
-                                {Array.from({ length: Math.min(meta.totalPages, 10) }, (_, i) => (
-                                    <button key={i} className={`page-btn ${meta.page === i + 1 ? 'active' : ''}`} onClick={() => fetchLogs(i + 1)}>
-                                        {i + 1}
-                                    </button>
-                                ))}
-                                {meta.totalPages > 10 && <span style={{ color: 'var(--text-secondary)', padding: '6px' }}>...</span>}
+                        {/* Pagination and Limit */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Logs per page:</span>
+                                <select
+                                    className="input"
+                                    style={{ padding: '4px 8px', fontSize: '13px', minWidth: '70px', height: '32px' }}
+                                    value={limit}
+                                    onChange={e => {
+                                        const newLimit = parseInt(e.target.value);
+                                        setLimit(newLimit);
+                                        fetchLogs(1, filters, newLimit);
+                                    }}
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={25}>25</option>
+                                    <option value={50}>50</option>
+                                </select>
                             </div>
-                        )}
+
+                            {meta.totalPages > 1 && (
+                                <div className="pagination" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    {(() => {
+                                        const pages = [];
+                                        const maxPagesToShow = 5;
+                                        let startPage = Math.max(1, meta.page - Math.floor(maxPagesToShow / 2));
+                                        let endPage = Math.min(meta.totalPages, startPage + maxPagesToShow - 1);
+
+                                        if (endPage - startPage + 1 < maxPagesToShow) {
+                                            startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                                        }
+
+                                        for (let i = startPage; i <= endPage; i++) {
+                                            pages.push(i);
+                                        }
+
+                                        return (
+                                            <>
+                                                {startPage > 1 && <span style={{ color: 'var(--text-secondary)', padding: '6px' }}>...</span>}
+                                                {pages.map(p => (
+                                                    <button key={p} className={`page-btn ${meta.page === p ? 'active' : ''}`} onClick={() => fetchLogs(p)}>
+                                                        {p}
+                                                    </button>
+                                                ))}
+                                                {endPage < meta.totalPages && <span style={{ color: 'var(--text-secondary)', padding: '6px' }}>...</span>}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            )}
+                        </div>
                     </>
                 )}
 
@@ -180,9 +299,9 @@ export default function Logs() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="input-label">Platform Time</label>
+                                        <label className="input-label">Platform Time (IST)</label>
                                         <div style={{ padding: '8px', background: 'var(--bg-tertiary)', borderRadius: '6px', fontSize: '13px' }}>
-                                            {new Date(selectedLog.created_at).toLocaleString()}
+                                            {formatDateIST(selectedLog.created_at)}
                                         </div>
                                     </div>
                                 </div>

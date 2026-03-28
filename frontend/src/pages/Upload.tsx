@@ -5,6 +5,8 @@ import axios from 'axios';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Upload as UploadIcon, Image, X, CheckCircle2 } from 'lucide-react';
 import { formatDuration } from '../utils/format';
+import AIThumbnailGenerator from '../components/AIThumbnailGenerator';
+import { useTranslation } from '../i18n';
 
 type UploadStep = 'select' | 'details' | 'uploading' | 'done';
 
@@ -23,6 +25,7 @@ const Upload = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const dragRef = useRef<HTMLDivElement>(null);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -154,7 +157,13 @@ const Upload = () => {
     // ─── Step 1: Select Video (YouTube-style) ─────────────
     if (step === 'select') {
         return (
-            <div style={{ padding: '40px 24px', maxWidth: '960px', margin: '0 auto', color: 'var(--text-primary)' }}>
+            <div style={{ padding: '40px 24px', maxWidth: '960px', margin: '0 auto', color: 'var(--text-primary)', position: 'relative' }}>
+                <button
+                    onClick={() => navigate(-1)}
+                    style={{ position: 'absolute', top: '40px', right: '24px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                    <X size={24} />
+                </button>
                 <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px' }}>Upload video</h1>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px' }}>
                     Your videos will be private until you publish them.
@@ -243,12 +252,12 @@ const Upload = () => {
                                 {/* Title */}
                                 <div style={{ position: 'relative' }}>
                                     <label style={{ display: 'block', marginBottom: '6px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                                        Title (required)
+                                        {t('titleReq' as any)}
                                     </label>
                                     <input
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
-                                        placeholder="Add a title that describes your video"
+                                        placeholder={t('titleReq' as any)}
                                         required
                                         maxLength={100}
                                         style={{
@@ -265,12 +274,12 @@ const Upload = () => {
                                 {/* Description */}
                                 <div style={{ position: 'relative' }}>
                                     <label style={{ display: 'block', marginBottom: '6px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                                        Description
+                                        {t('description')}
                                     </label>
                                     <textarea
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Tell viewers about your video (type @ to mention a channel)"
+                                        placeholder={t('videoDescPlaceholder' as any)}
                                         rows={6}
                                         maxLength={5000}
                                         style={{
@@ -288,7 +297,7 @@ const Upload = () => {
                                 {/* Category */}
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '6px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                                        Category
+                                        {t('category')}
                                     </label>
                                     <select
                                         value={category}
@@ -299,7 +308,7 @@ const Upload = () => {
                                             color: 'var(--text-primary)', fontSize: '15px', outline: 'none'
                                         }}
                                     >
-                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                        {categories.map(cat => <option key={cat} value={cat}>{t(cat.toLowerCase() as any) || cat}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -309,7 +318,7 @@ const Upload = () => {
                         <div>
                             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '15px' }}>Thumbnail</label>
                             <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '12px' }}>
-                                Select or upload a picture that shows what's in your video. A good thumbnail stands out and draws viewers' attention.
+                                {t('uploadThumbDesc' as any)}
                             </p>
                             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                 <label style={{
@@ -320,7 +329,7 @@ const Upload = () => {
                                     transition: 'border-color 0.2s', fontSize: '13px', color: 'var(--text-secondary)'
                                 }}>
                                     <Image size={24} />
-                                    Upload thumbnail
+                                    {t('uploadThumbnail' as any)}
                                     <input type="file" hidden accept="image/*" onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         if (file) {
@@ -347,6 +356,17 @@ const Upload = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* AI Thumbnail Generator */}
+                            <AIThumbnailGenerator
+                                videoTitle={title || 'My Video'}
+                                videoCategory={category}
+                                onSelectThumbnail={(blob, previewUrl) => {
+                                    const file = new File([blob], `ai_thumbnail_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                                    setThumbnailFile(file);
+                                    setThumbnailPreview(previewUrl);
+                                }}
+                            />
                         </div>
 
                         {/* Submit */}
@@ -381,17 +401,17 @@ const Upload = () => {
                             )}
                             <div style={{ padding: '16px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Video Link</span>
+                                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{t('videoLink' as any)}</span>
                                     <span style={{ fontSize: '13px', color: '#3ea6ff' }}>viewtube.com</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>File name</span>
+                                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{t('fileName' as any)}</span>
                                     <span style={{ fontSize: '13px', color: 'var(--text-primary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         {videoFile?.name}
                                     </span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Duration</span>
+                                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{t('duration' as any)}</span>
                                     <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{formatDuration(videoDuration)}</span>
                                 </div>
                             </div>

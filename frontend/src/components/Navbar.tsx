@@ -305,7 +305,7 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
                   {t('notifications')}
                 </div>
                 {notifications.length === 0 ? (
-                  <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>No notifications</div>
+                  <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>{t('noNotifications' as any)}</div>
                 ) : (
                   notifications.map(n => (
                     <div

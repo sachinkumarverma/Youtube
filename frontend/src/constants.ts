@@ -60,7 +60,20 @@ export const TRANSLATIONS = {
         logout: 'Logout',
         usernameCooldown: 'Username can only be changed once every 30 days',
         daysRemaining: 'days remaining',
-        waitDays: 'You can change your username in'
+        waitDays: 'You can change your username in',
+        noThumbnail: 'No thumbnail',
+        changeThumbnail: 'Change Thumbnail',
+        titleReq: 'Title (required)',
+        videoDescPlaceholder: 'Tell viewers about your video',
+        uploadThumbnail: 'Upload thumbnail',
+        uploadThumbDesc: 'Upload your own or generate one with AI below',
+        videoLink: 'Video Link',
+        fileName: 'File name',
+        duration: 'Duration',
+        noNotifications: 'No notifications',
+        editVideo: 'Edit Video',
+        deleteVideo: 'Delete Video',
+        saveWatchLater: 'Save to Watch Later'
     },
     hi: {
         home: 'होम',
@@ -118,6 +131,19 @@ export const TRANSLATIONS = {
         logout: 'लॉगआउट',
         usernameCooldown: 'यूज़रनेम केवल हर 30 दिनों में एक बार बदला जा सकता है',
         daysRemaining: 'दिन शेष',
-        waitDays: 'आप अपना यूज़रनेम बदल सकते हैं'
+        waitDays: 'आप अपना यूज़रनेम बदल सकते हैं',
+        noThumbnail: 'कोई थंबनेल नहीं',
+        changeThumbnail: 'थंबनेल बदलें',
+        titleReq: 'शीर्षक (आवश्यक)',
+        videoDescPlaceholder: 'दर्शकों को अपने वीडियो के बारे में बताएं',
+        uploadThumbnail: 'थंबनेल अपलोड करें',
+        uploadThumbDesc: 'अपना खुद का थंबनेल अपलोड करें या नीचे AI से बनाएं',
+        videoLink: 'वीडियो लिंक',
+        fileName: 'फ़ाइल का नाम',
+        duration: 'अवधि',
+        noNotifications: 'कोई नोटिफिकेशन नहीं',
+        editVideo: 'वीडियो संपादित करें',
+        deleteVideo: 'वीडियो हटाएं',
+        saveWatchLater: 'बाद में देखने के लिए सेव करें'
     }
 };

@@ -25,16 +25,18 @@ router.post('/auth/login', async (req, res) => {
   }
 });
 
-// Dashboard & management (no auth middleware for simplicity; add in production)
-router.get('/stats', adminController.getStats);
-router.get('/logs', adminController.getLogs);
-router.get('/videos', adminController.getVideos);
-router.delete('/videos/:id', adminController.deleteVideo);
-router.get('/reports', adminController.getReports);
-router.put('/reports/:id/review', adminController.reviewReport);
-router.get('/users', adminController.getUsers);
-router.get('/comments', adminController.getComments);
-router.delete('/comments/:id', async (req, res, next) => {
+// Dashboard & management
+const { authenticateAdmin } = require('../../middleware/auth');
+
+router.get('/stats', authenticateAdmin, adminController.getStats);
+router.get('/logs', authenticateAdmin, adminController.getLogs);
+router.get('/videos', authenticateAdmin, adminController.getVideos);
+router.delete('/videos/:id', authenticateAdmin, adminController.deleteVideo);
+router.get('/reports', authenticateAdmin, adminController.getReports);
+router.put('/reports/:id/review', authenticateAdmin, adminController.reviewReport);
+router.get('/users', authenticateAdmin, adminController.getUsers);
+router.get('/comments', authenticateAdmin, adminController.getComments);
+router.delete('/comments/:id', authenticateAdmin, async (req, res, next) => {
   try {
     const { query } = require('../../lib/db');
     await query('DELETE FROM comments WHERE id = $1', [req.params.id]);
