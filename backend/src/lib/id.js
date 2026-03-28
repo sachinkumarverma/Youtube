@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 
 /**
- * Generate a cuid-like text ID compatible with Prisma's original ID format.
+ * Generate a cuid-like text ID.
  * Uses crypto.randomUUID() and strips dashes to create a compact text ID.
  */
 const generateId = () => {
