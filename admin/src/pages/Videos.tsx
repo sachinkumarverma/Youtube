@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Trash2, Video, X, AlertTriangle } from 'lucide-react';
+import { Search, Trash2, Video,AlertTriangle } from 'lucide-react';
 import TableSkeleton from '../components/TableSkeleton';
 import Skeleton from '../components/Skeleton';
+import { API_BASE_URL } from '../constants';
 
-const API = 'http://127.0.0.1:5000/api/admin';
+const API = API_BASE_URL;
 
 const formatDuration = (duration: string | number | undefined | null): string => {
     if (!duration) return '0:00';

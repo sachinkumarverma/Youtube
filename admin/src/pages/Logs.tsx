@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { FileText, Filter, RefreshCw, AlertCircle, User, Terminal, ChevronRight, Download } from 'lucide-react';
 import TableSkeleton from '../components/TableSkeleton';
+import { API_BASE_URL } from '../constants';
 
-const API = 'http://127.0.0.1:5000/api/admin';
+const API = API_BASE_URL;
 
 export default function Logs() {
     const [logs, setLogs] = useState<any[]>([]);

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../constants';
 import Modal from './Modal';
 import { useToast } from './Toast';
 
@@ -23,7 +24,7 @@ export default function ReportModal({ isOpen, onClose, videoId }: ReportModalPro
             return;
         }
         try {
-            await axios.post(`http://127.0.0.1:5000/api/reports/${videoId}`, { reason: selectedReason }, {
+            await axios.post(`${API_BASE_URL}/reports/${videoId}`, { reason: selectedReason }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setReportSubmitted(true);

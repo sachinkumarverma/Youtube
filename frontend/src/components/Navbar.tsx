@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../constants';
 
 // Declare SpeechRecognition types for TypeScript
 interface SpeechRecognitionEvent {
@@ -89,7 +90,7 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await axios.get('http://127.0.0.1:5000/api/notifications', {
+      const res = await axios.get(`${API_BASE_URL}/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(res.data);
@@ -120,7 +121,7 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
   const markAsRead = async (id: string) => {
     const token = localStorage.getItem('token');
     try {
-      await axios.put(`http://127.0.0.1:5000/api/notifications/${id}/read`, {}, {
+      await axios.put(`${API_BASE_URL}/notifications/${id}/read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
@@ -131,7 +132,7 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
     e.stopPropagation();
     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`http://127.0.0.1:5000/api/notifications/${id}`, {
+      await axios.delete(`${API_BASE_URL}/notifications/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(notifications.filter(n => n.id !== id));

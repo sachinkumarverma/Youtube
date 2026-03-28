@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import axios from 'axios';
+import { API_BASE_URL } from '../constants';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Upload as UploadIcon, Image, X, CheckCircle2 } from 'lucide-react';
 import { formatDuration } from '../utils/format';
@@ -127,7 +128,7 @@ const Upload = () => {
 
             // 3. Save to backend
             await axios.post(
-                'http://127.0.0.1:5000/api/videos',
+                `${API_BASE_URL}/videos`,
                 {
                     title,
                     description,

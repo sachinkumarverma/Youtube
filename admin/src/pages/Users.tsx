@@ -3,6 +3,7 @@ import axios from 'axios';
 import { User, Mail, Calendar, Video, Users as UsersIcon } from 'lucide-react';
 import TableSkeleton from '../components/TableSkeleton';
 import Skeleton from '../components/Skeleton';
+import { API_BASE_URL } from '../constants';
 
 interface UserData {
     id: string;
@@ -25,7 +26,7 @@ export default function Users() {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/users');
+            const res = await axios.get(`${API_BASE_URL}/users`);
             setUsers(res.data);
         } catch (err) {
             console.error(err);

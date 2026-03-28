@@ -3,6 +3,7 @@ import axios from 'axios';
 import { User, MessageSquare, Trash2, Video, Calendar } from 'lucide-react';
 import TableSkeleton from '../components/TableSkeleton';
 import Skeleton from '../components/Skeleton';
+import { API_BASE_URL } from '../constants';
 
 interface CommentData {
     id: string;
@@ -25,7 +26,7 @@ export default function Comments() {
     const fetchComments = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/comments');
+            const res = await axios.get(`${API_BASE_URL}/comments`);
             setComments(res.data);
         } catch (err) {
             console.error(err);
@@ -37,7 +38,7 @@ export default function Comments() {
     const deleteComment = async (id: string) => {
         if (!confirm('Are you sure you want to delete this comment?')) return;
         try {
-            await axios.delete(`http://localhost:5000/api/admin/comments/${id}`);
+            await axios.delete(`${API_BASE_URL}/comments/${id}`);
             setComments(comments.filter(c => c.id !== id));
         } catch (err) {
             alert('Failed to delete comment');

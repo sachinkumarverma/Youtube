@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import axios from 'axios';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
+import { API_BASE_URL } from '../constants';
 import { supabase } from '../lib/supabase';
 
 const Register = () => {
@@ -18,7 +19,7 @@ const Register = () => {
         setLoading(true);
 
         try {
-            const response = await axios.post('http://127.0.0.1:5000/api/auth/register', {
+            const response = await axios.post(`${API_BASE_URL}/auth/register`, {
                 username,
                 email,
                 password
@@ -42,7 +43,7 @@ const Register = () => {
             if (event === 'SIGNED_IN' && session?.user) {
                 try {
                     const { email, user_metadata } = session.user;
-                    const response = await axios.post('http://127.0.0.1:5000/api/auth/google', {
+                    const response = await axios.post(`${API_BASE_URL}/auth/google`, {
                         email,
                         username: user_metadata.name || email?.split('@')[0] || 'User',
                         avatar_url: user_metadata.avatar_url

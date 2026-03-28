@@ -3,8 +3,9 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Users, Video, MessageSquare, Flag, TrendingUp, Activity, FileText } from 'lucide-react';
 import Skeleton from '../components/Skeleton';
+import { API_BASE_URL } from '../constants';
 
-const API = 'http://127.0.0.1:5000/api/admin';
+const API = API_BASE_URL;
 
 interface Stats {
     totalUsers: number;

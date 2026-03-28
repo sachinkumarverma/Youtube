@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../constants';
 import { ThumbsUp, Share2, SkipBack, SkipForward, Clock, UserPlus, UserMinus, User, Flag, Check } from 'lucide-react';
 import ShareModal from '../components/ShareModal';
 import ReportModal from '../components/ReportModal';
@@ -48,7 +49,7 @@ export default function VideoPlayer() {
         const fetchVideo = async () => {
             setLoading(true);
             try {
-                const response = await axios.get(`http://127.0.0.1:5000/api/videos/${id}`);
+                const response = await axios.get(`${API_BASE_URL}/videos/${id}`);
                 setVideo(response.data);
                 setLikesCount(response.data.likes.length);
 
@@ -60,12 +61,12 @@ export default function VideoPlayer() {
 
                     const token = localStorage.getItem('token');
                     if (token) {
-                        axios.post(`http://127.0.0.1:5000/api/user/history/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                        axios.post(`${API_BASE_URL}/user/history/${id}`, {}, { headers: { Authorization: `Bearer ${token}` } });
 
-                        axios.get('http://127.0.0.1:5000/api/user/watch-later', { headers: { Authorization: `Bearer ${token}` } })
+                        axios.get(`${API_BASE_URL}/user/watch-later`, { headers: { Authorization: `Bearer ${token}` } })
                             .then(res => setIsWatchLater(res.data.some((v: any) => v.id === id)));
 
-                        axios.get('http://127.0.0.1:5000/api/user/subscriptions', { headers: { Authorization: `Bearer ${token}` } })
+                        axios.get(`${API_BASE_URL}/user/subscriptions`, { headers: { Authorization: `Bearer ${token}` } })
                             .then(res => setIsSubscribed(res.data.some((s: any) => s.channel_id === response.data.user_id)));
                     }
                 }
@@ -74,7 +75,7 @@ export default function VideoPlayer() {
                     viewedRef.current = id || null; // Synchronously mark as viewed to prevent double-firing in StrictMode
                     const token = localStorage.getItem('token');
                     if (token) {
-                        axios.put(`http://127.0.0.1:5000/api/videos/${id}/view`, {}, {
+                        axios.put(`${API_BASE_URL}/videos/${id}/view`, {}, {
                             headers: { Authorization: `Bearer ${token}` }
                         }).catch(console.error);
                     }
@@ -98,7 +99,7 @@ export default function VideoPlayer() {
         setLikesCount(prev => willBeLiked ? prev + 1 : Math.max(0, prev - 1));
 
         try {
-            const res = await axios.post(`http://127.0.0.1:5000/api/videos/${id}/like`, {}, {
+            const res = await axios.post(`${API_BASE_URL}/videos/${id}/like`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Sync with server truth
@@ -122,7 +123,7 @@ export default function VideoPlayer() {
         const token = localStorage.getItem('token');
         if (!token) return alert('Please login to save!');
         try {
-            const res = await axios.post(`http://127.0.0.1:5000/api/user/watch-later/${id}`, {}, {
+            const res = await axios.post(`${API_BASE_URL}/user/watch-later/${id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setIsWatchLater(res.data.watchLater);
@@ -134,7 +135,7 @@ export default function VideoPlayer() {
         const token = localStorage.getItem('token');
         if (!token) return alert('Please login to subscribe!');
         try {
-            const res = await axios.post(`http://127.0.0.1:5000/api/user/subscribe/${video.user_id}`, {}, {
+            const res = await axios.post(`${API_BASE_URL}/user/subscribe/${video.user_id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setIsSubscribed(res.data.subscribed);
@@ -148,7 +149,7 @@ export default function VideoPlayer() {
         if (!token) return alert('Please login to comment!');
 
         try {
-            const res = await axios.post(`http://127.0.0.1:5000/api/videos/${id}/comment`, { content: commentText }, {
+            const res = await axios.post(`${API_BASE_URL}/videos/${id}/comment`, { content: commentText }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setVideo(prev => prev ? { ...prev, comments: [res.data, ...prev.comments] } : null);

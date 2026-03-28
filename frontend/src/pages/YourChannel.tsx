@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../constants';
 import { AlertTriangle, Upload } from 'lucide-react';
 import Modal from '../components/Modal';
 import { useTranslation } from '../i18n';
@@ -29,7 +30,7 @@ export default function YourChannel() {
             if (cached) setVideos(JSON.parse(cached));
 
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://127.0.0.1:5000/api/user/channel`, {
+            const res = await axios.get(`${API_BASE_URL}/user/channel`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -73,7 +74,7 @@ export default function YourChannel() {
                 formData.append('thumbnail', newThumbnailFile);
             }
 
-            await axios.put(`http://127.0.0.1:5000/api/videos/${editingVideo.id}`, formData, {
+            await axios.put(`${API_BASE_URL}/videos/${editingVideo.id}`, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
@@ -90,7 +91,7 @@ export default function YourChannel() {
         if (!deletingVideoId) return;
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://127.0.0.1:5000/api/videos/${deletingVideoId}`, {
+            await axios.delete(`${API_BASE_URL}/videos/${deletingVideoId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setDeletingVideoId(null);

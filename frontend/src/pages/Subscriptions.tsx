@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../constants';
 import { Link } from 'react-router-dom';
 import { Bell, BellOff, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '../i18n';
@@ -15,7 +16,7 @@ export default function Subscriptions() {
             setLoading(true);
             try {
                 const token = localStorage.getItem('token');
-                const res = await axios.get('http://127.0.0.1:5000/api/user/subscriptions', {
+                const res = await axios.get(`${API_BASE_URL}/user/subscriptions`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setSubscriptions(res.data);
@@ -31,7 +32,7 @@ export default function Subscriptions() {
     const toggleNotifications = async (channelId: string) => {
         const token = localStorage.getItem('token');
         try {
-            const res = await axios.post(`http://127.0.0.1:5000/api/user/subscribe/${channelId}/toggle-notifications`, {}, {
+            const res = await axios.post(`${API_BASE_URL}/user/subscribe/${channelId}/toggle-notifications`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setSubscriptions(prev => prev.map(sub =>

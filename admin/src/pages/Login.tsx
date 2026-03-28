@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { LogIn } from 'lucide-react';
+import { API_BASE_URL } from '../constants';
 
-const API = 'http://127.0.0.1:5000/api/admin/auth';
+const API = `${API_BASE_URL}/auth`;
 
 export default function Login() {
     const [isRegister, setIsRegister] = useState(false);

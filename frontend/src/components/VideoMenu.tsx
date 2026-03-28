@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MoreVertical, Watch, Share2, Flag, Trash2, Pencil, Check } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../constants';
 import { useToast } from './Toast';
 import ShareModal from './ShareModal';
 import ReportModal from './ReportModal';
@@ -41,7 +42,7 @@ export default function VideoMenu({ videoId, videoTitle, isOwner, onEdit, onDele
         const token = localStorage.getItem('token');
         if (!token) return;
         try {
-            const res = await axios.get('http://127.0.0.1:5000/api/user/watch-later', {
+            const res = await axios.get(`${API_BASE_URL}/user/watch-later`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setIsWatchLater(res.data.some((v: any) => v.id === videoId));
@@ -64,7 +65,7 @@ export default function VideoMenu({ videoId, videoTitle, isOwner, onEdit, onDele
 
         setLoading(true);
         try {
-            const res = await axios.post(`http://127.0.0.1:5000/api/user/watch-later/${videoId}`, {}, {
+            const res = await axios.post(`${API_BASE_URL}/user/watch-later/${videoId}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const added = res.data.watchLater;

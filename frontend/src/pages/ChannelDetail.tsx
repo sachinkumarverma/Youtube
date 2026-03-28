@@ -4,7 +4,7 @@ import axios from 'axios';
 import { CheckCircle2, Info, PlayCircle, Edit3, Camera, X, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import { supabase } from '../lib/supabase';
-import { CATEGORIES } from '../constants';
+import { API_BASE_URL, CATEGORIES } from '../constants';
 import VideoCard from '../components/VideoCard';
 import Skeleton from '../components/Skeleton';
 import VideoSkeleton from '../components/VideoSkeleton';
@@ -64,7 +64,7 @@ export default function ChannelDetail() {
                     setBannerPreview(parsed.user.banner_url);
                 }
 
-                const res = await axios.get(`http://127.0.0.1:5000/api/user/channel/${id}`);
+                const res = await axios.get(`${API_BASE_URL}/user/channel/${id}`);
 
                 // Cache the fresh data in background
                 sessionStorage.setItem(`channel_${id}`, JSON.stringify(res.data));
@@ -77,7 +77,7 @@ export default function ChannelDetail() {
 
                 const token = localStorage.getItem('token');
                 if (token) {
-                    const subsRes = await axios.get('http://127.0.0.1:5000/api/user/subscriptions', {
+                    const subsRes = await axios.get(`${API_BASE_URL}/user/subscriptions`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                     setIsSubscribed(subsRes.data.some((s: any) => s.channel_id === id));
@@ -95,7 +95,7 @@ export default function ChannelDetail() {
         const token = localStorage.getItem('token');
         if (!token) return alert('Please login to subscribe!');
         try {
-            const res = await axios.post(`http://127.0.0.1:5000/api/user/subscribe/${id}`, {}, {
+            const res = await axios.post(`${API_BASE_URL}/user/subscribe/${id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setIsSubscribed(res.data.subscribed);
@@ -139,7 +139,7 @@ export default function ChannelDetail() {
             }
 
             setSaving(true);
-            const res = await axios.put('http://127.0.0.1:5000/api/auth/profile', {
+            const res = await axios.put(`${API_BASE_URL}/auth/profile`, {
                 username: editUsername,
                 about: editAbout,
                 avatar_url,
@@ -165,7 +165,7 @@ export default function ChannelDetail() {
         if (!deleteVideoId) return;
         const token = localStorage.getItem('token');
         try {
-            await axios.delete(`http://127.0.0.1:5000/api/videos/${deleteVideoId}`, {
+            await axios.delete(`${API_BASE_URL}/videos/${deleteVideoId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setData(prev => prev ? { ...prev, videos: prev.videos.filter(v => v.id !== deleteVideoId) } : null);
@@ -489,7 +489,7 @@ function VideoEditModal({ video, onClose, onUpdate }: { video: any, onClose: () 
         if (thumbnailFile) formData.append('thumbnail', thumbnailFile);
 
         try {
-            const res = await axios.put(`http://127.0.0.1:5000/api/videos/${video.id}`, formData, {
+            const res = await axios.put(`${API_BASE_URL}/videos/${video.id}`, formData, {
                 headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
             });
             onUpdate(res.data);

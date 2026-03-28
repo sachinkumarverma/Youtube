@@ -3,8 +3,9 @@ import axios from 'axios';
 import { Flag, Trash2, XCircle, Send, X, Check } from 'lucide-react';
 import ReportSkeleton from '../components/ReportSkeleton';
 import Skeleton from '../components/Skeleton';
+import { API_BASE_URL } from '../constants';
 
-const API = 'http://127.0.0.1:5000/api/admin';
+const API = API_BASE_URL;
 
 export default function Reports() {
     const [reports, setReports] = useState<any[]>([]);

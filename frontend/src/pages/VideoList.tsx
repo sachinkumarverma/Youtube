@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../constants';
 import { useTranslation } from '../i18n';
 import VideoSkeleton from '../components/VideoSkeleton';
 import VideoCard from '../components/VideoCard';
@@ -20,7 +21,7 @@ export default function VideoList({ endpoint, title }: { endpoint: string, title
             }
             try {
                 const token = localStorage.getItem('token');
-                const res = await axios.get(`http://127.0.0.1:5000/api/${endpoint}`, {
+                const res = await axios.get(`${API_BASE_URL}/${endpoint}`, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
                 let data = res.data;

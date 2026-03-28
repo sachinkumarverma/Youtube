@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../constants';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import VideoSkeleton from '../components/VideoSkeleton';
@@ -34,13 +35,13 @@ const Home = () => {
       }
 
       try {
-        const res = await axios.get('http://127.0.0.1:5000/api/videos');
+        const res = await axios.get(`${API_BASE_URL}/videos`);
         let fetchedVideos = res.data;
 
         const token = localStorage.getItem('token');
         if (token) {
           try {
-            const subRes = await axios.get('http://127.0.0.1:5000/api/user/subscriptions', {
+            const subRes = await axios.get(`${API_BASE_URL}/user/subscriptions`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             const subbedChannelIds = subRes.data.map((s: any) => s.channel_id);
