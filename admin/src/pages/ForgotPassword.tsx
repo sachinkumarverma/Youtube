@@ -31,12 +31,12 @@ export default function ForgotPassword() {
         setError('');
         setLoading(true);
         try {
-            await axios.post(`${API}/forgot-password`, { email });
+            await axios.post(`${API}/forgot-password`, { email }, { timeout: 60000 });
             setStep('otp');
             setResendTimer(60);
             setSuccess('OTP sent to your email');
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to send OTP');
+            setError(err.response?.data?.error || (err.code === 'ECONNABORTED' ? 'Request timed out. Please try again.' : 'Failed to send OTP'));
         } finally {
             setLoading(false);
         }
@@ -105,7 +105,7 @@ export default function ForgotPassword() {
         setError('');
         setLoading(true);
         try {
-            await axios.post(`${API}/forgot-password`, { email });
+            await axios.post(`${API}/forgot-password`, { email }, { timeout: 60000 });
             setOtp(['', '', '', '', '', '']);
             setResendTimer(60);
             setSuccess('New OTP sent to your email');

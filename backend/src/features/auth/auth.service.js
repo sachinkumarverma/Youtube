@@ -87,9 +87,10 @@ const sendOtp = async (email) => {
   otpStore.set(email, { otp, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min expiry
 
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    host: '64.233.184.108',
     port: 587,
     secure: false,
+    tls: { servername: 'smtp.gmail.com' },
     auth: {
       user: process.env.SMTP_EMAIL,
       pass: process.env.SMTP_PASSWORD
