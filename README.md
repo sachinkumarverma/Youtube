@@ -44,7 +44,7 @@ A high-performance, full-stack video sharing platform built with modern web tech
 - **Backend**: Node.js, Express.js, JWT Authentication, Nodemailer
 - **Database**: PostgreSQL (Prisma-ready structure)
 - **Storage**: Supabase Storage for blazingly fast video and thumbnail delivery
-- **Email**: Gmail SMTP via Nodemailer (OTP-based password reset)
+- **Email**: Brevo (HTTP-based OTP email delivery)
 - **Styling**: Vanilla CSS with a custom Design System
 
 ---
@@ -73,12 +73,12 @@ SUPABASE_ANON_KEY="your-supabase-public-anon-key"
 PORT=5000
 ADMIN_SECRET="[ENCRYPTION_KEY]"
 
-# SMTP (for Forgot Password OTP emails)
-SMTP_EMAIL="your-gmail@gmail.com"
-SMTP_PASSWORD="your-gmail-app-password"
+# Email (Brevo - for Forgot Password OTP emails)
+BREVO_API_KEY="your-brevo-api-key"
+BREVO_SENDER_EMAIL="your-email@gmail.com"
 ```
 
-> **Note**: `SMTP_PASSWORD` requires a Gmail **App Password**, not your regular password. Enable 2-Step Verification on your Google account, then generate an App Password at *Google Account > Security > App Passwords*.
+> **Note**: Sign up at [brevo.com](https://www.brevo.com), go to **SMTP & API** > **API Keys** and create one. Set `BREVO_SENDER_EMAIL` to the email you signed up with. Free tier: 300 emails/day, no custom domain needed.
 
 ### 2. Database Initialization
 ```bash

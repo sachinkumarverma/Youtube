@@ -58,6 +58,7 @@ router.delete('/videos/:id', authenticateAdmin, adminController.deleteVideo);
 router.get('/reports', authenticateAdmin, adminController.getReports);
 router.put('/reports/:id/review', authenticateAdmin, adminController.reviewReport);
 router.get('/users', authenticateAdmin, adminController.getUsers);
+router.put('/users/:id/toggle-status', authenticateAdmin, adminController.toggleUserStatus);
 router.get('/comments', authenticateAdmin, adminController.getComments);
 router.delete('/comments/:id', authenticateAdmin, async (req, res, next) => {
   try {

@@ -1,6 +1,5 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const authRepo = require('./auth.repository');
 
 const COOLDOWN_DAYS = 15;
@@ -29,6 +28,8 @@ const register = async ({ username, email, password, avatar_url }) => {
 const login = async ({ email, password }) => {
   const user = await authRepo.findByEmail(email);
   if (!user) throw { status: 400, message: 'Invalid credentials' };
+
+  if (user.is_active === false) throw { status: 403, message: 'Your account has been deactivated. Please contact admin.' };
 
   const validPassword = await bcrypt.compare(password, user.password_hash);
   if (!validPassword) throw { status: 400, message: 'Invalid credentials' };
@@ -86,38 +87,34 @@ const sendOtp = async (email) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore.set(email, { otp, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min expiry
 
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.SMTP_EMAIL,
-      pass: process.env.SMTP_PASSWORD
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'content-type': 'application/json',
+      'api-key': process.env.BREVO_API_KEY
     },
-    family: 4,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    tls: {
-      rejectUnauthorized: false
-    }
+    body: JSON.stringify({
+      sender: { name: 'ViewTube', email: process.env.BREVO_SENDER_EMAIL },
+      to: [{ email }],
+      subject: 'ViewTube - Password Reset OTP',
+      htmlContent: `
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;border-radius:12px;color:#fff">
+          <h2 style="text-align:center;color:#ff0000">ViewTube Password Reset</h2>
+          <p style="text-align:center;color:#aaa">Use the OTP below to reset your password</p>
+          <div style="text-align:center;margin:24px 0">
+            <span style="font-size:32px;font-weight:bold;letter-spacing:8px;background:#1a1a1a;padding:16px 32px;border-radius:8px;border:1px solid #333;display:inline-block">${otp}</span>
+          </div>
+          <p style="text-align:center;color:#888;font-size:13px">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
+        </div>
+      `
+    })
   });
 
-  await transporter.sendMail({
-    from: `"ViewTube" <${process.env.SMTP_EMAIL}>`,
-    to: email,
-    subject: 'ViewTube - Password Reset OTP',
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;border-radius:12px;color:#fff">
-        <h2 style="text-align:center;color:#ff0000">ViewTube Password Reset</h2>
-        <p style="text-align:center;color:#aaa">Use the OTP below to reset your password</p>
-        <div style="text-align:center;margin:24px 0">
-          <span style="font-size:32px;font-weight:bold;letter-spacing:8px;background:#1a1a1a;padding:16px 32px;border-radius:8px;border:1px solid #333;display:inline-block">${otp}</span>
-        </div>
-        <p style="text-align:center;color:#888;font-size:13px">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
-      </div>
-    `
-  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw { status: 500, message: errBody.message || 'Failed to send OTP email' };
+  }
 
   return { message: 'OTP sent to your email' };
 };

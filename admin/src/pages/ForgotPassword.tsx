@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Mail, ArrowLeft, KeyRound, Lock } from 'lucide-react';
+import { Mail, ArrowLeft, KeyRound, Lock, Sun, Moon } from 'lucide-react';
 import { API_BASE_URL } from '../constants';
 
 type Step = 'email' | 'otp' | 'reset';
@@ -8,6 +8,12 @@ type Step = 'email' | 'otp' | 'reset';
 const API = `${API_BASE_URL}/auth`;
 
 export default function ForgotPassword() {
+    const [theme, setTheme] = useState(localStorage.getItem('admin_theme') || 'dark');
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('admin_theme', theme);
+    }, [theme]);
     const [step, setStep] = useState<Step>('email');
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -118,6 +124,9 @@ export default function ForgotPassword() {
 
     return (
         <div className="auth-container">
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="theme-toggle-btn" style={{ position: 'absolute', top: '20px', right: '20px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', cursor: 'pointer', padding: '10px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <div className="auth-card animate-in" style={{ maxWidth: '420px' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                     <img src="/logo.png" alt="ViewTube Logo" style={{ width: '80px', height: 'auto', objectFit: 'contain' }} />

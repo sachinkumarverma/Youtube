@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-require('dns').setDefaultResultOrder('ipv4first'); // Fix for Render SMTP IPv6 issue
 require('dotenv').config();
 
 // Feature routes

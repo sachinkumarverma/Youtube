@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { User, Mail, Calendar, Video, Users as UsersIcon } from 'lucide-react';
+import { User, Mail, Calendar, Video, Users as UsersIcon, ShieldCheck, ShieldOff } from 'lucide-react';
 import TableSkeleton from '../components/TableSkeleton';
 import Skeleton from '../components/Skeleton';
 import { API_BASE_URL } from '../constants';
@@ -13,11 +13,13 @@ interface UserData {
     created_at: string;
     videos_count: string;
     subscribers_count: string;
+    is_active: boolean;
 }
 
 export default function Users() {
     const [users, setUsers] = useState<UserData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchUsers();
@@ -32,6 +34,19 @@ export default function Users() {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const toggleStatus = async (id: string) => {
+        if (togglingId) return;
+        setTogglingId(id);
+        try {
+            const res = await axios.put(`${API_BASE_URL}/users/${id}/toggle-status`);
+            setUsers(users.map(u => u.id === id ? { ...u, is_active: res.data.is_active } : u));
+        } catch (err) {
+            console.error('Failed to toggle user status', err);
+        } finally {
+            setTogglingId(null);
         }
     };
 
@@ -65,7 +80,8 @@ export default function Users() {
                                     <th>Joined</th>
                                     <th>Videos</th>
                                     <th>Subscribers</th>
-                                    <th>ID</th>
+                                    <th>Status</th>
+                                    <th style={{ textAlign: 'right' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -106,8 +122,35 @@ export default function Users() {
                                                 {user.subscribers_count}
                                             </div>
                                         </td>
-                                        <td style={{ fontSize: '10px', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
-                                            {user.id}
+                                        <td>
+                                            <span style={{
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                fontSize: '12px',
+                                                fontWeight: 600,
+                                                background: user.is_active !== false ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
+                                                color: user.is_active !== false ? 'var(--success)' : 'var(--danger)'
+                                            }}>
+                                                {user.is_active !== false ? 'Active' : 'Deactivated'}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button
+                                                onClick={() => toggleStatus(user.id)}
+                                                disabled={togglingId === user.id}
+                                                className={`btn btn-sm ${user.is_active !== false ? 'btn-danger' : 'btn-primary'}`}
+                                                title={user.is_active !== false ? 'Deactivate User' : 'Activate User'}
+                                                style={{ opacity: togglingId === user.id ? 0.6 : 1, cursor: togglingId === user.id ? 'not-allowed' : 'pointer' }}
+                                            >
+                                                {togglingId === user.id ? (
+                                                    <span className="spinner" style={{ width: '15px', height: '15px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.6s linear infinite' }} />
+                                                ) : (
+                                                    user.is_active !== false ? <ShieldOff size={15} /> : <ShieldCheck size={15} />
+                                                )}
+                                                <span className="hide-mobile" style={{ marginLeft: '6px' }}>
+                                                    {togglingId === user.id ? 'Wait...' : (user.is_active !== false ? 'Deactivate' : 'Activate')}
+                                                </span>
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}

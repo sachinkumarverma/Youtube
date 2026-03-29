@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { BarChart3, Video, Flag, FileText, LogOut, Shield, Users, MessageSquare, Menu } from 'lucide-react';
+import { BarChart3, Video, Flag, FileText, LogOut, Shield, Users, MessageSquare, Menu, Sun, Moon } from 'lucide-react';
 
 export default function Layout() {
     const navigate = useNavigate();
     const location = useLocation();
     const admin = JSON.parse(localStorage.getItem('admin_user') || '{}');
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
+    const [theme, setTheme] = useState(localStorage.getItem('admin_theme') || 'dark');
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('admin_theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -53,6 +61,9 @@ export default function Layout() {
                         </h1>
                     </div>
                 </div>
+                <button onClick={toggleTheme} className="icon-btn theme-toggle-btn" title={theme === 'dark' ? 'Light mode' : 'Dark mode'} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)', cursor: 'pointer', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s, border-color 0.2s' }}>
+                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
             </header>
 
             <div className="admin-body">

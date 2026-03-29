@@ -108,4 +108,20 @@ const getComments = async () => {
   return result.rows;
 };
 
-module.exports = { getStats, getLogs, getAllVideos, deleteVideo, getReports, reviewReport, getUsers, getComments };
+const toggleUserStatus = async (userId, adminId) => {
+  const userResult = await query('SELECT id, username, is_active FROM users WHERE id = $1', [userId]);
+  const user = userResult.rows[0];
+  if (!user) throw { status: 404, message: 'User not found' };
+
+  const newStatus = !user.is_active;
+  await query('UPDATE users SET is_active = $1 WHERE id = $2', [newStatus, userId]);
+
+  await query(
+    'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+    [newStatus ? 'USER_ACTIVATED' : 'USER_DEACTIVATED', 'user', userId, adminId, JSON.stringify({ username: user.username })]
+  );
+
+  return { is_active: newStatus };
+};
+
+module.exports = { getStats, getLogs, getAllVideos, deleteVideo, getReports, reviewReport, getUsers, getComments, toggleUserStatus };

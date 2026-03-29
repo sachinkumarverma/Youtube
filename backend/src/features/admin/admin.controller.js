@@ -75,4 +75,11 @@ const getComments = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-module.exports = { getStats, getLogs, getVideos, deleteVideo, getReports, reviewReport, getUsers, getComments };
+const toggleUserStatus = async (req, res, next) => {
+  try {
+    const result = await adminService.toggleUserStatus(req.params.id, req.user.id);
+    res.json(result);
+  } catch (error) { next(error); }
+};
+
+module.exports = { getStats, getLogs, getVideos, deleteVideo, getReports, reviewReport, getUsers, getComments, toggleUserStatus };

@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import axios from 'axios'
 import App from './App'
 
+// Apply saved theme before render to avoid flash
+document.documentElement.setAttribute('data-theme', localStorage.getItem('admin_theme') || 'dark');
+
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('admin_token');
   if (token) {
