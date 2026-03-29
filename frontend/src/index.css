@@ -767,6 +767,13 @@ body {
 
   .nav-right .icon-btn {
     padding: 5px;
+    width: auto;
+    height: auto;
+  }
+
+  .nav-right .icon-btn[title="Account"] {
+    width: 32px !important;
+    height: 32px !important;
   }
 
   .nav-right .icon-btn svg {

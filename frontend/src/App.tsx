@@ -7,6 +7,7 @@ import VideoPlayer from './pages/VideoPlayer';
 import VideoList from './pages/VideoList';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import Subscriptions from './pages/Subscriptions';
 import ChannelDetail from './pages/ChannelDetail';
 import Upload from './pages/Upload';
@@ -57,6 +58,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/video/:id" element={<VideoPlayer />} />
                 <Route path="/explore" element={<VideoList endpoint="videos/explore" title="Explore" />} />
                 <Route path="/trending" element={<VideoList endpoint="videos/trending" title="Trending" />} />

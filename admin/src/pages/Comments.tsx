@@ -47,16 +47,19 @@ export default function Comments() {
     return (
         <div className="animate-in">
             <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                     <div className="stat-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent)' }}>
                         <MessageSquare size={24} />
                     </div>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                         <h1 style={{ fontSize: '20px', fontWeight: '700' }}>Comment Moderation</h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Monitor and moderate all user discussions across videos</p>
+                        <p className="hide-mobile" style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Monitor and moderate all user discussions across videos</p>
+                        <p className="show-mobile" style={{ color: 'var(--text-secondary)', fontSize: '12px', fontWeight: '600', marginTop: '2px' }}>
+                            {loading ? <Skeleton width="80px" height="14px" /> : `${comments.length} Total Comments`}
+                        </p>
                     </div>
                 </div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '600' }}>
+                <div className="hide-mobile" style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '600', whiteSpace: 'nowrap', marginLeft: 'auto' }}>
                     {loading ? <Skeleton width="80px" height="18px" /> : `${comments.length} Total Comments`}
                 </div>
             </div>

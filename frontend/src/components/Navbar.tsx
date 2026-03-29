@@ -263,7 +263,7 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
           <form className="search-bar" onSubmit={handleSearch}>
             <input type="text" className="search-input" placeholder={t('search')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             {searchQuery && (
-              <button type="button" className="icon-btn" onClick={() => setSearchQuery('')} title="Clear search">
+              <button type="button" className="icon-btn" onClick={() => { setSearchQuery(''); navigate('/'); }} title="Clear search">
                 <X size={20} />
               </button>
             )}

@@ -111,6 +111,10 @@ const Login = () => {
                 </button>
             </form>
 
+            <div style={{ textAlign: 'right', marginTop: '0.75rem' }}>
+                <Link to="/forgot-password" style={{ color: '#3ea6ff', textDecoration: 'none', fontSize: '14px' }}>Forgot Password?</Link>
+            </div>
+
             <div style={{ textAlign: 'center', margin: '1.5rem 0', color: 'var(--text-secondary)' }}>OR</div>
             <button
                 type="button"

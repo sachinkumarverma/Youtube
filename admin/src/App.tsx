@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Videos from './pages/Videos';
 import Reports from './pages/Reports';
@@ -21,6 +22,7 @@ function App() {
       <OfflineBanner />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/" element={<ProtectedRoute />}>
           <Route index element={<Dashboard />} />
           <Route path="users" element={<Users />} />

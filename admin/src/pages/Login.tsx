@@ -76,6 +76,12 @@ export default function Login() {
                     </button>
                 </form>
 
+                {!isRegister && (
+                    <div style={{ textAlign: 'right', marginTop: '12px' }}>
+                        <a href="/forgot-password" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}>Forgot Password?</a>
+                    </div>
+                )}
+
                 <div style={{ textAlign: 'center', marginTop: '20px' }}>
                     <button
                         onClick={() => { setIsRegister(!isRegister); setError(''); }}

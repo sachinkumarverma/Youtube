@@ -116,7 +116,7 @@ a {
   min-width: 240px;
   background: var(--bg-primary);
   border-right: 1px solid var(--border);
-  padding: 16px 12px;
+  padding: 16px 12px 0;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -132,7 +132,7 @@ a {
 .sidebar.collapsed {
   width: 72px;
   min-width: 72px;
-  padding: 16px 4px;
+  padding: 16px 4px 0;
   overflow: visible;
 }
 
@@ -212,6 +212,10 @@ a {
   color: var(--accent);
 }
 
+.sidebar-link.logout-link {
+  margin-bottom: 12px;
+}
+
 .sidebar-link.logout-link:hover {
   color: var(--danger);
 }
@@ -273,6 +277,10 @@ a {
   min-width: 0;
   min-height: calc(100vh - 64px);
   background: var(--bg-primary);
+}
+
+.show-mobile {
+  display: none;
 }
 
 .page-header {
@@ -655,11 +663,35 @@ tbody tr:hover {
 }
 
 /* Filter bar */
+.filter-bar-wrapper {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filter-bar-wrapper.collapsed {
+  grid-template-rows: 0fr;
+}
+
+.filter-bar-wrapper>div {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.filter-bar-wrapper>.filter-bar {
+  overflow: hidden;
+}
+
 .filter-bar {
   display: flex;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
   align-items: flex-end;
+  padding: 20px;
+}
+
+.filter-toggle:hover {
+  background: var(--bg-hover) !important;
 }
 
 .filter-pill {
@@ -839,6 +871,15 @@ tbody tr:hover {
     display: none !important;
   }
 
+  .show-mobile {
+    display: block !important;
+  }
+
+  button.show-mobile {
+    display: flex !important;
+  }
+
+
   /* Navbar */
   .admin-navbar {
     height: 56px;
@@ -856,7 +897,7 @@ tbody tr:hover {
     transform: translateX(-100%);
     box-shadow: 4px 0 30px rgba(0, 0, 0, 0.8);
     z-index: 150;
-    padding: 16px 12px;
+    padding: 16px 12px 0;
     overflow-y: auto;
     overflow-x: hidden;
     transition: transform 0.3s ease;

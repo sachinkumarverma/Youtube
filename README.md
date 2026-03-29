@@ -18,10 +18,17 @@ A high-performance, full-stack video sharing platform built with modern web tech
 - **AI-Powered Summaries**: Integrated AI to provide brief overviews of video content instantly.
 - **Interactive Engagement**: Like, subscribe, and share with real-time optimistic updates.
 
+### 🔐 Authentication & Security
+- **JWT Authentication**: Secure token-based auth with 7-day expiry.
+- **Google OAuth**: One-click sign-in via Supabase OAuth integration.
+- **Forgot Password with OTP**: Email-based password reset using a 6-digit OTP (10 min expiry) sent via Gmail SMTP.
+- **Admin Forgot Password**: Same OTP-based password recovery available in the Admin Portal.
+
 ### 🛡️ Robust Admin Ecosystem
-- **Centralized Dashboard**: Manage videos, users, and reports from a dedicated Admin Portal.
-- **Full Audit Logging**: Every critical action is recorded for transparency and security.
-- **Content Moderation**: Streamlined reporting and video removal workflows.
+- **Centralized Dashboard**: Manage videos, users, comments, and reports from a dedicated Admin Portal.
+- **Full Audit Logging**: Every critical action is recorded with filterable, collapsible log viewer.
+- **Content Moderation**: Streamlined reporting and video/comment removal workflows.
+- **Comment Moderation**: View, manage, and delete user comments across all videos.
 
 ### 🎨 Modern UI & UX
 - **Glassmorphism Design**: Sleek, modern interface using custom CSS tokens and high-quality animations.
@@ -34,9 +41,10 @@ A high-performance, full-stack video sharing platform built with modern web tech
 ## 🚀 Tech Stack
 
 - **Frontend**: React 19, Vite, React Router 7, Lucide Icons
-- **Backend**: Node.js, Express.js, JWT Authentication
+- **Backend**: Node.js, Express.js, JWT Authentication, Nodemailer
 - **Database**: PostgreSQL (Prisma-ready structure)
 - **Storage**: Supabase Storage for blazingly fast video and thumbnail delivery
+- **Email**: Gmail SMTP via Nodemailer (OTP-based password reset)
 - **Styling**: Vanilla CSS with a custom Design System
 
 ---
@@ -63,8 +71,14 @@ JWT_SECRET="your-secure-jwt-secret"
 SUPABASE_URL="your-supabase-project-url"
 SUPABASE_ANON_KEY="your-supabase-public-anon-key"
 PORT=5000
-ADMIN_SECRET="viewtube-admin-2024"
+ADMIN_SECRET="[ENCRYPTION_KEY]"
+
+# SMTP (for Forgot Password OTP emails)
+SMTP_EMAIL="your-gmail@gmail.com"
+SMTP_PASSWORD="your-gmail-app-password"
 ```
+
+> **Note**: `SMTP_PASSWORD` requires a Gmail **App Password**, not your regular password. Enable 2-Step Verification on your Google account, then generate an App Password at *Google Account > Security > App Passwords*.
 
 ### 2. Database Initialization
 ```bash
@@ -114,8 +128,7 @@ npm run dev
 ---
 
 ## 🔑 Default Admin Access
-To register as an admin for the first time, use the following secret key in the Admin Portal registration form:
-`viewtube-admin-2024`
+To register as an admin for the first time, ask for the secret key from the admin
 
 ---
 

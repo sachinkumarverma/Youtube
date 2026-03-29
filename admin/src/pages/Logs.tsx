@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FileText, Filter, RefreshCw, AlertCircle, User, Terminal, ChevronRight, Download } from 'lucide-react';
+import { FileText, Filter, RefreshCw, AlertCircle, User, Terminal, ChevronRight, Download, ChevronDown } from 'lucide-react';
 import TableSkeleton from '../components/TableSkeleton';
 import { API_BASE_URL } from '../constants';
 
@@ -14,6 +14,7 @@ export default function Logs() {
     const [limit, setLimit] = useState(25);
     const [selectedLog, setSelectedLog] = useState<any>(null);
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+    const [filtersOpen, setFiltersOpen] = useState(true);
     const cacheRef = useRef<Record<string, any>>({});
 
     const formatDateIST = (dateStr: string) => {
@@ -127,47 +128,66 @@ export default function Logs() {
 
             <div className="page-body">
                 {/* Filters */}
-                <div className="filter-bar" style={{ marginBottom: '24px', background: 'var(--bg-secondary)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                    <div className="input-group">
-                        <label className="input-label">Event Type</label>
-                        <select className="input" value={filters.action} onChange={e => {
-                            const newAction = e.target.value;
-                            setFilters(p => ({ ...p, action: newAction }));
-                            fetchLogs(1, { ...filters, action: newAction });
-                        }} style={{ minWidth: '220px' }}>
-                            <option value="">All Events</option>
-                            <option value="VIDEO_UPLOADED">Video Uploads</option>
-                            <option value="VIDEO_DELETED">Video Deletions</option>
-                            <option value="COMMENT_ADDED">Comments Added</option>
-                            <option value="COMMENT_DELETED">Comments Deleted</option>
-                            <option value="REPORT_SUBMITTED">User Reports</option>
-                            <option value="ADMIN_VIDEO_DELETED">Admin Video Removals</option>
-                            <option value="ADMIN_COMMENT_DELETED">Admin Comment Removals</option>
-                            <option value="ADMIN_REPORT_REJECTED">Report Rejections</option>
-                            <option value="ADMIN_FEEDBACK_SENT">Admin Feedbacks</option>
-                            <option value="ADMIN_LOGIN">Admin Logins</option>
-                            <option value="SYSTEM_ERROR">System Errors</option>
-                        </select>
-                    </div>
-                    <div className="input-group">
-                        <label className="input-label">Date From</label>
-                        <input className="input" type="date" value={filters.from} onChange={e => setFilters(p => ({ ...p, from: e.target.value }))} />
-                    </div>
-                    <div className="input-group">
-                        <label className="input-label">Date To</label>
-                        <input className="input" type="date" value={filters.to} onChange={e => setFilters(p => ({ ...p, to: e.target.value }))} />
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end', marginLeft: 'auto' }}>
-                        <button className="btn btn-primary" onClick={() => fetchLogs(1)}>
-                            <Filter size={14} /> Filter
-                        </button>
-                        <button className="btn btn-ghost" onClick={() => {
-                            const emptyFilters = { action: '', from: '', to: '' };
-                            setFilters(emptyFilters);
-                            fetchLogs(1, emptyFilters);
-                        }}>
-                            Reset
-                        </button>
+                <div style={{ marginBottom: '24px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                    <button
+                        className="filter-toggle"
+                        onClick={() => setFiltersOpen(!filtersOpen)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}
+                    >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Filter size={16} /> Filters
+                            {(filters.action || filters.from || filters.to) && (
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)' }} />
+                            )}
+                        </span>
+                        <ChevronDown size={18} style={{ transition: 'transform 0.3s', transform: filtersOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                    </button>
+                    <div className={`filter-bar-wrapper ${filtersOpen ? '' : 'collapsed'}`}>
+                        <div style={{ minHeight: 0 }}>
+                            <div className="filter-bar">
+                                <div className="input-group">
+                                    <label className="input-label">Event Type</label>
+                                    <select className="input" value={filters.action} onChange={e => {
+                                        const newAction = e.target.value;
+                                        setFilters(p => ({ ...p, action: newAction }));
+                                        fetchLogs(1, { ...filters, action: newAction });
+                                    }} style={{ minWidth: '220px' }}>
+                                        <option value="">All Events</option>
+                                        <option value="VIDEO_UPLOADED">Video Uploads</option>
+                                        <option value="VIDEO_DELETED">Video Deletions</option>
+                                        <option value="COMMENT_ADDED">Comments Added</option>
+                                        <option value="COMMENT_DELETED">Comments Deleted</option>
+                                        <option value="REPORT_SUBMITTED">User Reports</option>
+                                        <option value="ADMIN_VIDEO_DELETED">Admin Video Removals</option>
+                                        <option value="ADMIN_COMMENT_DELETED">Admin Comment Removals</option>
+                                        <option value="ADMIN_REPORT_REJECTED">Report Rejections</option>
+                                        <option value="ADMIN_FEEDBACK_SENT">Admin Feedbacks</option>
+                                        <option value="ADMIN_LOGIN">Admin Logins</option>
+                                        <option value="SYSTEM_ERROR">System Errors</option>
+                                    </select>
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Date From</label>
+                                    <input className="input" type="date" value={filters.from} max={filters.to || undefined} onChange={e => setFilters(p => ({ ...p, from: e.target.value }))} />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Date To</label>
+                                    <input className="input" type="date" value={filters.to} min={filters.from || undefined} onChange={e => setFilters(p => ({ ...p, to: e.target.value }))} />
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end', marginLeft: 'auto' }}>
+                                    <button className="btn btn-primary" onClick={() => fetchLogs(1)}>
+                                        <Filter size={14} /> Filter
+                                    </button>
+                                    <button className="btn btn-ghost" onClick={() => {
+                                        const emptyFilters = { action: '', from: '', to: '' };
+                                        setFilters(emptyFilters);
+                                        fetchLogs(1, emptyFilters);
+                                    }}>
+                                        Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

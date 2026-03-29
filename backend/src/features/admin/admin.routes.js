@@ -1,8 +1,31 @@
 const { Router } = require('express');
 const adminController = require('./admin.controller');
 const adminAuth = require('./admin.auth');
+const authService = require('../auth/auth.service');
 
 const router = Router();
+
+// Forgot password
+router.post('/auth/forgot-password', async (req, res, next) => {
+  try {
+    const result = await authService.sendOtp(req.body.email);
+    res.json(result);
+  } catch (error) { next(error); }
+});
+
+router.post('/auth/verify-otp', async (req, res, next) => {
+  try {
+    const result = authService.verifyOtp(req.body.email, req.body.otp);
+    res.json(result);
+  } catch (error) { next(error); }
+});
+
+router.post('/auth/reset-password', async (req, res, next) => {
+  try {
+    const result = await authService.resetPassword(req.body.email, req.body.otp, req.body.password);
+    res.json(result);
+  } catch (error) { next(error); }
+});
 
 // Admin auth
 router.post('/auth/register', async (req, res) => {

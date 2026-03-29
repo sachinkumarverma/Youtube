@@ -1,8 +1,12 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const authRepo = require('./auth.repository');
 
 const COOLDOWN_DAYS = 15;
+
+// In-memory OTP store: { email: { otp, expiresAt } }
+const otpStore = new Map();
 
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -75,4 +79,63 @@ const updateProfile = async (userId, { avatar_url, banner_url, about, username }
   return authRepo.update(userId, data);
 };
 
-module.exports = { register, login, googleAuth, updateProfile };
+const sendOtp = async (email) => {
+  const user = await authRepo.findByEmail(email);
+  if (!user) throw { status: 404, message: 'No account found with this email' };
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore.set(email, { otp, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min expiry
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.SMTP_EMAIL,
+      pass: process.env.SMTP_PASSWORD
+    }
+  });
+
+  await transporter.sendMail({
+    from: `"ViewTube" <${process.env.SMTP_EMAIL}>`,
+    to: email,
+    subject: 'ViewTube - Password Reset OTP',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;border-radius:12px;color:#fff">
+        <h2 style="text-align:center;color:#ff0000">ViewTube Password Reset</h2>
+        <p style="text-align:center;color:#aaa">Use the OTP below to reset your password</p>
+        <div style="text-align:center;margin:24px 0">
+          <span style="font-size:32px;font-weight:bold;letter-spacing:8px;background:#1a1a1a;padding:16px 32px;border-radius:8px;border:1px solid #333;display:inline-block">${otp}</span>
+        </div>
+        <p style="text-align:center;color:#888;font-size:13px">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
+      </div>
+    `
+  });
+
+  return { message: 'OTP sent to your email' };
+};
+
+const verifyOtp = (email, otp) => {
+  const stored = otpStore.get(email);
+  if (!stored) throw { status: 400, message: 'No OTP requested for this email' };
+  if (Date.now() > stored.expiresAt) {
+    otpStore.delete(email);
+    throw { status: 400, message: 'OTP has expired. Please request a new one' };
+  }
+  if (stored.otp !== otp) throw { status: 400, message: 'Invalid OTP' };
+  return { message: 'OTP verified' };
+};
+
+const resetPassword = async (email, otp, newPassword) => {
+  verifyOtp(email, otp);
+  otpStore.delete(email);
+
+  const user = await authRepo.findByEmail(email);
+  if (!user) throw { status: 404, message: 'User not found' };
+
+  const salt = await bcrypt.genSalt(10);
+  const password_hash = await bcrypt.hash(newPassword, salt);
+  await authRepo.update(user.id, { password_hash });
+
+  return { message: 'Password reset successfully' };
+};
+
+module.exports = { register, login, googleAuth, updateProfile, sendOtp, verifyOtp, resetPassword };
