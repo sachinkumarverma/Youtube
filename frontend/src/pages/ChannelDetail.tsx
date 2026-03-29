@@ -26,6 +26,14 @@ interface ChannelData {
 }
 
 export default function ChannelDetail() {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const { id } = useParams<{ id: string }>();
     const [data, setData] = useState<ChannelData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -175,18 +183,18 @@ export default function ChannelDetail() {
 
     if (loading) return (
         <div style={{ padding: '0 0 40px 0', color: 'var(--text-primary)' }}>
-            <div style={{ height: '200px', width: '100%', background: 'var(--bg-secondary)', overflow: 'hidden' }}>
+            <div style={{ height: isMobile ? '120px' : '200px', width: '100%', background: 'var(--bg-secondary)', overflow: 'hidden' }}>
                 <Skeleton width="100%" height="100%" />
             </div>
-            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
-                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginTop: '-40px', paddingBottom: '24px' }}>
-                    <div style={{ width: '128px', height: '128px', borderRadius: '50%', border: '4px solid var(--bg-primary)', overflow: 'hidden', background: 'var(--bg-secondary)', flexShrink: 0 }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '0 12px' : '0 24px' }}>
+                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '24px', alignItems: 'center', marginTop: '-40px', paddingBottom: '24px' }}>
+                    <div style={{ width: isMobile ? '80px' : '128px', height: isMobile ? '80px' : '128px', borderRadius: '50%', border: '4px solid var(--bg-primary)', overflow: 'hidden', background: 'var(--bg-secondary)', flexShrink: 0 }}>
                         <Skeleton width="100%" height="100%" borderRadius="50%" />
                     </div>
-                    <div style={{ marginTop: '50px', flex: 1 }}>
-                        <Skeleton width="220px" height="32px" />
-                        <div style={{ marginTop: '12px' }}><Skeleton width="300px" height="20px" /></div>
-                        <div style={{ marginTop: '16px' }}><Skeleton width="140px" height="40px" borderRadius="24px" /></div>
+                    <div style={{ marginTop: isMobile ? '8px' : '50px', flex: 1, textAlign: isMobile ? 'center' : 'left' }}>
+                        <Skeleton width={isMobile ? "160px" : "220px"} height="32px" />
+                        <div style={{ marginTop: '12px', display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start' }}><Skeleton width={isMobile ? "200px" : "300px"} height="20px" /></div>
+                        <div style={{ marginTop: '16px', display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start' }}><Skeleton width="140px" height="40px" borderRadius="24px" /></div>
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid var(--border)', marginBottom: '24px', paddingBottom: '12px' }}>
@@ -224,7 +232,7 @@ export default function ChannelDetail() {
     return (
         <div style={{ padding: '0 0 40px 0', color: 'var(--text-primary)' }}>
             {/* Banner */}
-            <div style={{ height: '200px', width: '100%', position: 'relative', background: 'var(--bg-secondary)', overflow: 'hidden' }}>
+            <div style={{ height: isMobile ? '120px' : '200px', width: '100%', position: 'relative', background: 'var(--bg-secondary)', overflow: 'hidden' }}>
                 {user.banner_url ? (
                     <img src={user.banner_url} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
@@ -232,9 +240,26 @@ export default function ChannelDetail() {
                 )}
             </div>
 
-            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
-                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginTop: '-40px', paddingBottom: '24px', position: 'relative' }}>
-                    <div style={{ width: '128px', height: '128px', borderRadius: '50%', border: '4px solid var(--bg-primary)', overflow: 'hidden', background: 'var(--bg-secondary)', flexShrink: 0 }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '0 16px' : '0 24px' }}>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    gap: isMobile ? '12px' : '24px',
+                    alignItems: isMobile ? 'center' : 'center',
+                    marginTop: isMobile ? '-40px' : '-40px',
+                    paddingBottom: isMobile ? '16px' : '24px',
+                    position: 'relative',
+                    textAlign: isMobile ? 'center' : 'left'
+                }}>
+                    <div style={{
+                        width: isMobile ? '90px' : '128px',
+                        height: isMobile ? '90px' : '128px',
+                        borderRadius: '50%',
+                        border: '4px solid var(--bg-primary)',
+                        overflow: 'hidden',
+                        background: 'var(--bg-secondary)',
+                        flexShrink: 0
+                    }}>
                         {user.avatar_url ? (
                             <img src={user.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
@@ -243,14 +268,32 @@ export default function ChannelDetail() {
                             </div>
                         )}
                     </div>
-                    <div style={{ marginTop: '50px', flex: 1 }}>
-                        <h1 style={{ fontSize: '32px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {user.username} <CheckCircle2 size={24} color="var(--text-secondary)" />
+                    <div style={{
+                        marginTop: isMobile ? '0' : '50px',
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: isMobile ? 'center' : 'flex-start'
+                    }}>
+                        <h1 style={{
+                            fontSize: isMobile ? '24px' : '32px',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}>
+                            {user.username} <CheckCircle2 size={isMobile ? 18 : 24} color="var(--text-secondary)" />
                         </h1>
-                        <p style={{ color: 'var(--text-secondary)', marginTop: '4px', fontSize: '15px' }}>
+                        <p style={{ color: 'var(--text-secondary)', marginTop: '4px', fontSize: isMobile ? '13px' : '15px' }}>
                             @{user.username.toLowerCase().replace(' ', '')} • {user._count.subscribers} {t('subscribers')} • {user._count.videos} {t('videos')}
                         </p>
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                        <div style={{
+                            display: 'flex',
+                            gap: '12px',
+                            marginTop: '16px',
+                            width: isMobile ? '100%' : 'auto',
+                            justifyContent: isMobile ? 'center' : 'flex-start'
+                        }}>
                             {isOwner ? (
                                 <button onClick={() => {
                                     setEditUsername(user.username);
@@ -273,11 +316,11 @@ export default function ChannelDetail() {
                 </div>
 
                 {/* Tabs */}
-                <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid var(--border)', marginBottom: '24px' }}>
-                    <button onClick={() => setActiveTab('videos')} style={{ padding: '12px 4px', background: 'transparent', border: 'none', color: activeTab === 'videos' ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === 'videos' ? '2px solid var(--text-primary)' : 'none' }}>
+                <div style={{ display: 'flex', gap: isMobile ? '16px' : '32px', borderBottom: '1px solid var(--border)', marginBottom: '24px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                    <button onClick={() => setActiveTab('videos')} style={{ padding: '12px 4px', background: 'transparent', border: 'none', color: activeTab === 'videos' ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === 'videos' ? '2px solid var(--text-primary)' : 'none', fontSize: isMobile ? '13px' : '15px' }}>
                         {t('videos').toUpperCase()}
                     </button>
-                    <button onClick={() => setActiveTab('about')} style={{ padding: '12px 4px', background: 'transparent', border: 'none', color: activeTab === 'about' ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === 'about' ? '2px solid var(--text-primary)' : 'none' }}>
+                    <button onClick={() => setActiveTab('about')} style={{ padding: '12px 4px', background: 'transparent', border: 'none', color: activeTab === 'about' ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === 'about' ? '2px solid var(--text-primary)' : 'none', fontSize: isMobile ? '13px' : '15px' }}>
                         {t('about').toUpperCase()}
                     </button>
                 </div>
@@ -301,7 +344,7 @@ export default function ChannelDetail() {
                         )}
                     </div>
                 ) : (
-                    <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                    <div style={{ padding: isMobile ? '0px' : '12px', display: 'flex', flexDirection: 'column', gap: isMobile ? '24px' : '32px' }}>
                         <div style={{ maxWidth: '800px' }}>
                             <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>{t('description')}</h3>
                             <p style={{ lineHeight: '1.6', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>

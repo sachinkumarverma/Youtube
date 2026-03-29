@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import axios from 'axios';
@@ -12,6 +12,14 @@ import { useTranslation } from '../i18n';
 type UploadStep = 'select' | 'details' | 'uploading' | 'done';
 
 const Upload = () => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const [step, setStep] = useState<UploadStep>('select');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -158,7 +166,7 @@ const Upload = () => {
     // ─── Step 1: Select Video (YouTube-style) ─────────────
     if (step === 'select') {
         return (
-            <div style={{ padding: '40px 24px', maxWidth: '960px', margin: '0 auto', color: 'var(--text-primary)', position: 'relative' }}>
+            <div style={{ padding: isMobile ? '20px 16px' : '40px 24px', maxWidth: '960px', margin: '0 auto', color: 'var(--text-primary)', position: 'relative' }}>
                 <button
                     onClick={() => navigate(-1)}
                     style={{ position: 'absolute', top: '40px', right: '24px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -181,7 +189,7 @@ const Upload = () => {
                     style={{
                         border: `2px dashed ${isDragOver ? '#3ea6ff' : 'var(--border)'}`,
                         borderRadius: '16px',
-                        padding: '80px 40px',
+                        padding: isMobile ? '40px 20px' : '80px 40px',
                         textAlign: 'center',
                         cursor: 'pointer',
                         background: isDragOver ? 'rgba(62, 166, 255, 0.05)' : 'var(--bg-secondary)',
@@ -229,7 +237,7 @@ const Upload = () => {
     // ─── Step 2: Fill Details ──────────────────────────────
     if (step === 'details') {
         return (
-            <div style={{ padding: '24px', maxWidth: '1100px', margin: '0 auto', color: 'var(--text-primary)' }}>
+            <div style={{ padding: isMobile ? '12px' : '24px', maxWidth: '1100px', margin: '0 auto', color: 'var(--text-primary)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                     <h1 style={{ fontSize: '22px', fontWeight: '600' }}>
                         {title || 'Untitled Video'}
@@ -244,12 +252,12 @@ const Upload = () => {
 
                 {error && <div style={{ color: '#ff4444', margin: '0 0 16px 0', padding: '12px', background: 'rgba(255,68,68,0.1)', borderRadius: '8px' }}>{error}</div>}
 
-                <form onSubmit={handleUpload} style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '32px' }}>
+                <form onSubmit={handleUpload} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 340px', gap: isMobile ? '24px' : '32px' }}>
                     {/* Left: Details Form */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '15px' }}>Details</label>
-                            <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: isMobile ? '12px' : '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                 {/* Title */}
                                 <div style={{ position: 'relative' }}>
                                     <label style={{ display: 'block', marginBottom: '6px', color: 'var(--text-secondary)', fontSize: '13px' }}>
@@ -321,9 +329,9 @@ const Upload = () => {
                             <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '12px' }}>
                                 {t('uploadThumbDesc' as any)}
                             </p>
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', alignItems: isMobile ? 'flex-start' : 'center' }}>
                                 <label style={{
-                                    width: '180px', height: '100px', borderRadius: '8px',
+                                    width: isMobile ? '100%' : '180px', height: '100px', borderRadius: '8px',
                                     border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column',
                                     alignItems: 'center', justifyContent: 'center', gap: '4px',
                                     cursor: 'pointer', background: 'var(--bg-secondary)',
@@ -340,7 +348,7 @@ const Upload = () => {
                                     }} />
                                 </label>
                                 {thumbnailPreview && (
-                                    <div style={{ position: 'relative', width: '180px', height: '100px', borderRadius: '8px', overflow: 'hidden' }}>
+                                    <div style={{ position: 'relative', width: isMobile ? '100%' : '180px', height: isMobile ? '160px' : '100px', borderRadius: '8px', overflow: 'hidden' }}>
                                         <img src={thumbnailPreview} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         <button
                                             type="button"
@@ -371,7 +379,7 @@ const Upload = () => {
                         </div>
 
                         {/* Submit */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: isMobile ? 'stretch' : 'flex-end', gap: '12px', paddingTop: '8px' }}>
                             <button
                                 type="submit"
                                 disabled={!title || uploading}
@@ -380,6 +388,7 @@ const Upload = () => {
                                     color: (!title || uploading) ? 'var(--text-secondary)' : '#000',
                                     border: 'none', borderRadius: '24px', fontWeight: 'bold',
                                     fontSize: '16px', cursor: (!title || uploading) ? 'not-allowed' : 'pointer',
+                                    width: isMobile ? '100%' : 'auto',
                                     transition: 'all 0.2s'
                                 }}
                             >
@@ -389,7 +398,12 @@ const Upload = () => {
                     </div>
 
                     {/* Right: Video Preview Card */}
-                    <div style={{ position: 'sticky', top: '80px', alignSelf: 'start' }}>
+                    <div style={{
+                        position: isMobile ? 'static' : 'sticky',
+                        top: '80px',
+                        alignSelf: 'start',
+                        order: isMobile ? -1 : 1
+                    }}>
                         <div style={{
                             background: 'var(--bg-secondary)', borderRadius: '12px', overflow: 'hidden'
                         }}>

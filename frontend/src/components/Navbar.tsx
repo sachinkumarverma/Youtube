@@ -48,6 +48,13 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const navigate = useNavigate();
   const { language, setLanguage, t } = useTranslation();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -269,7 +276,13 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
             style={{
               background: isListening ? 'rgba(234, 67, 53, 0.2)' : 'var(--bg-secondary)',
               border: isListening ? '2px solid #ea4335' : 'none',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              width: '40px',
+              height: '40px',
+              display: 'grid',
+              placeItems: 'center',
+              borderRadius: '50%',
+              flexShrink: 0
             }}
           >
             <Mic size={20} color={isListening ? '#ea4335' : undefined} />
@@ -277,18 +290,21 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
         </div>
 
         <div className="nav-right">
-          <button className="icon-btn" onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')} title="Change Language" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', fontWeight: 'bold' }}>
-            <Languages size={24} />
-            <span style={{ textTransform: 'uppercase' }}>{language}</span>
-          </button>
-          <button className="icon-btn" onClick={toggleTheme} title="Toggle Theme">
-            {theme === 'dark' ? <Moon size={24} /> : <Sun size={24} />}
-          </button>
-          {isLoggedIn && (
-            <Link to="/upload" className="icon-btn" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
-              <Video size={24} />
-              <span style={{ display: 'none' }}>{t('upload')}</span>
-            </Link>
+          {!isMobile && (
+            <>
+              <button className="icon-btn" onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')} title="Change Language" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', fontWeight: 'bold' }}>
+                <Languages size={24} />
+                <span style={{ textTransform: 'uppercase' }}>{language}</span>
+              </button>
+              <button className="icon-btn" onClick={toggleTheme} title="Toggle Theme">
+                {theme === 'dark' ? <Moon size={24} /> : <Sun size={24} />}
+              </button>
+              {isLoggedIn && (
+                <Link to="/upload" className="icon-btn" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
+                  <Video size={24} />
+                </Link>
+              )}
+            </>
           )}
 
           <div style={{ position: 'relative' }} ref={notificationDropdownRef}>
@@ -301,7 +317,27 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
               )}
             </button>
             {showNotificationDropdown && (
-              <div className="user-dropdown" style={{ right: 0, width: '360px', maxHeight: '480px', overflowY: 'auto' }}>
+              <div
+                className="user-dropdown"
+                style={isMobile ? {
+                  position: 'fixed',
+                  top: '60px',
+                  left: '12px',
+                  right: '12px',
+                  width: 'calc(100vw - 24px)',
+                  maxWidth: '360px',
+                  maxHeight: '480px',
+                  overflowY: 'auto',
+                  margin: '0 auto',
+                  zIndex: 1000,
+                  transform: 'none',
+                } : {
+                  right: 0,
+                  width: '360px',
+                  maxHeight: '480px',
+                  overflowY: 'auto',
+                }}
+              >
                 <div style={{ padding: '16px', borderBottom: '1px solid var(--border)', fontWeight: 'bold', fontSize: '16px' }}>
                   {t('notifications')}
                 </div>
@@ -362,16 +398,60 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
                     <LogOut size={18} />
                     {t('logout')}
                   </button>
+
+                  {isMobile && (
+                    <>
+                      <div style={{ height: '1px', background: 'var(--border)' }}></div>
+                      <Link to="/upload" onClick={() => setShowUserDropdown(false)} style={{ textDecoration: 'none', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', fontSize: '15px' }}>
+                        <Video size={18} />
+                        {t('upload')}
+                      </Link>
+                      <button onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')} style={{ width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px' }}>
+                        <Languages size={18} />
+                        {language === 'en' ? 'हिन्दी (Hindi)' : 'English'}
+                      </button>
+                      <button onClick={toggleTheme} style={{ width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px' }}>
+                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                        {theme === 'dark' ? t('lightMode' as any) || 'Light Mode' : t('darkMode' as any) || 'Dark Mode'}
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
           ) : (
-            <Link to="/login" style={{ textDecoration: 'none' }}>
-              <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'transparent', border: '1px solid #3ea6ff', color: '#3ea6ff', borderRadius: '18px', cursor: 'pointer', fontWeight: 'bold' }}>
-                <User size={20} />
-                {t('login')}
-              </button>
-            </Link>
+            <div style={{ position: 'relative' }} ref={userDropdownRef}>
+              {isMobile ? (
+                <button className="icon-btn" onClick={() => setShowUserDropdown(!showUserDropdown)}>
+                  <User size={24} />
+                </button>
+              ) : (
+                <Link to="/login" style={{ textDecoration: 'none' }}>
+                  <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'transparent', border: '1px solid #3ea6ff', color: '#3ea6ff', borderRadius: '18px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    <User size={20} />
+                    {t('login')}
+                  </button>
+                </Link>
+              )}
+
+              {isMobile && showUserDropdown && (
+                <div className="user-dropdown">
+                  <Link to="/login" onClick={() => setShowUserDropdown(false)} style={{ textDecoration: 'none', color: '#3ea6ff', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', fontSize: '15px', fontWeight: 'bold' }}>
+                    <User size={18} />
+                    {t('login')}
+                  </Link>
+                  <div style={{ height: '1px', background: 'var(--border)' }}></div>
+                  <button onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')} style={{ width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px' }}>
+                    <Languages size={18} />
+                    {language === 'en' ? 'हिन्दी (Hindi)' : 'English'}
+                  </button>
+                  <button onClick={toggleTheme} style={{ width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '15px' }}>
+                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                    {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </nav>
