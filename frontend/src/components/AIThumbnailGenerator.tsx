@@ -55,15 +55,18 @@ RULES:
             throw new Error('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
         }
 
-        // Use gemini-2.5-flash to dynamically code an SVG graphic
+        // Use gemini-2.0-flash (non-thinking model) to generate SVG graphics
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.9, maxOutputTokens: 4000 }
+                    generationConfig: {
+                        temperature: 0.9,
+                        maxOutputTokens: 8192
+                    }
                 })
             }
         );
@@ -74,10 +77,20 @@ RULES:
         }
 
         const data = await response.json();
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        // Gemini thinking models return multiple parts (thought + response).
+        // Concatenate all text parts to ensure we capture the SVG output.
+        const allParts = data.candidates?.[0]?.content?.parts || [];
+        const rawText = allParts
+            .filter((p: any) => p.text && !p.thought)
+            .map((p: any) => p.text)
+            .join('\n');
+
+        // Strip markdown code fences if present (```svg ... ``` or ```xml ... ```)
+        const cleaned = rawText.replace(/```(?:svg|xml|html)?\s*/gi, '').replace(/```/g, '');
 
         // Extract strictly the SVG part
-        const svgMatch = rawText.match(/<svg[\s\S]*<\/svg>/i);
+        const svgMatch = cleaned.match(/<svg[\s\S]*<\/svg>/i);
         if (!svgMatch) {
             throw new Error('Failed to generate SVG graphic. Model output an invalid format.');
         }

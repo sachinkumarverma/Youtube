@@ -4,6 +4,7 @@ import { useTranslation } from '../i18n';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../constants';
+import { useToast } from './Toast';
 
 // Declare SpeechRecognition types for TypeScript
 interface SpeechRecognitionEvent {
@@ -48,6 +49,7 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const navigate = useNavigate();
   const { language, setLanguage, t } = useTranslation();
+  const { showToast } = useToast();
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
@@ -167,7 +169,7 @@ const Navbar = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
   const startVoiceSearch = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Voice search is not supported in your browser. Please use Chrome.');
+      showToast('Voice search is not supported in your browser. Please use Chrome.', 'info');
       return;
     }
 

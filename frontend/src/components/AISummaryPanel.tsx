@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Sparkles, ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react';
 
 interface AISummaryPanelProps {
@@ -7,6 +7,65 @@ interface AISummaryPanelProps {
     videoCategory?: string;
     videoDuration?: string;
     channelName?: string;
+    videoUrl?: string;
+}
+
+// Capture frames from the video at evenly spaced intervals
+function captureFrames(videoUrl: string, count = 4): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.crossOrigin = 'anonymous';
+        video.muted = true;
+        video.preload = 'auto';
+
+        video.onloadedmetadata = () => {
+            const duration = video.duration;
+            if (!duration || duration < 1) {
+                reject(new Error('Video too short to capture frames'));
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 360;
+            const ctx = canvas.getContext('2d')!;
+            const frames: string[] = [];
+            let idx = 0;
+
+            // Pick evenly spaced timestamps (skip first/last 5%)
+            const startOffset = duration * 0.05;
+            const endOffset = duration * 0.95;
+            const step = (endOffset - startOffset) / (count - 1);
+            const timestamps = Array.from({ length: count }, (_, i) => startOffset + step * i);
+
+            const seekAndCapture = () => {
+                if (idx >= timestamps.length) {
+                    video.src = '';
+                    resolve(frames);
+                    return;
+                }
+                video.currentTime = timestamps[idx];
+            };
+
+            video.onseeked = () => {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                // Get base64 data (strip the data:image/jpeg;base64, prefix)
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                frames.push(dataUrl.split(',')[1]);
+                idx++;
+                seekAndCapture();
+            };
+
+            seekAndCapture();
+        };
+
+        video.onerror = () => reject(new Error('Failed to load video for frame capture'));
+
+        // Timeout after 15 seconds
+        setTimeout(() => reject(new Error('Video frame capture timed out')), 15000);
+
+        video.src = videoUrl;
+    });
 }
 
 export default function AISummaryPanel({
@@ -15,6 +74,7 @@ export default function AISummaryPanel({
     videoCategory,
     videoDuration,
     channelName,
+    videoUrl,
 }: AISummaryPanelProps) {
     const [summary, setSummary] = useState('');
     const [loading, setLoading] = useState(false);
@@ -34,7 +94,35 @@ export default function AISummaryPanel({
         setError('');
         setExpanded(true);
 
-        const prompt = `You are a helpful assistant that summarizes YouTube videos based on their metadata.
+        try {
+            // Try to capture frames from the video for visual analysis
+            let frameParts: any[] = [];
+            if (videoUrl) {
+                try {
+                    const frames = await captureFrames(videoUrl, 4);
+                    frameParts = frames.map(base64 => ({
+                        inlineData: {
+                            mimeType: 'image/jpeg',
+                            data: base64
+                        }
+                    }));
+                } catch {
+                    // If frame capture fails (CORS, etc.), fall back to text-only
+                    console.warn('Frame capture failed, using text-only summary');
+                }
+            }
+
+            const textPrompt = frameParts.length > 0
+                ? `You are analyzing a YouTube video. Here are ${frameParts.length} frames captured from the video at different timestamps.
+
+Video Title: "${videoTitle}"
+Channel: "${channelName || 'Unknown'}"
+Category: "${videoCategory || 'General'}"
+Duration: "${videoDuration || 'Unknown'}"
+Description: "${videoDescription || 'No description provided.'}"
+
+Based on the visual content in these frames AND the metadata, provide a concise, engaging 3-5 sentence summary of what this video is about. Describe what you actually see happening in the frames — the setting, people, actions, text overlays, visuals. Write in a friendly, informative tone. Do not say "based on the frames" or "it appears" — just summarize directly as if you watched it.`
+                : `You are a helpful assistant that summarizes YouTube videos based on their metadata.
 
 Video Title: "${videoTitle}"
 Channel: "${channelName || 'Unknown'}"
@@ -44,15 +132,19 @@ Description: "${videoDescription || 'No description provided.'}"
 
 Please provide a concise, engaging 3-4 sentence summary of what this video is likely about. Mention the key topics, what the viewer will learn or experience, and who it's best suited for. Write in a friendly, informative tone. Do not say "this video is likely about" — just summarize directly as if you know the content.`;
 
-        try {
+            const parts = [
+                ...frameParts,
+                { text: textPrompt }
+            ];
+
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+                `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 300 }
+                        contents: [{ parts }],
+                        generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
                     })
                 }
             );
@@ -63,7 +155,11 @@ Please provide a concise, engaging 3-4 sentence summary of what this video is li
             }
 
             const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const allParts = data.candidates?.[0]?.content?.parts || [];
+            const text = allParts
+                .filter((p: any) => p.text)
+                .map((p: any) => p.text)
+                .join('\n');
             if (!text) throw new Error('No summary generated');
             setSummary(text.trim());
             setGenerated(true);
@@ -87,25 +183,25 @@ Please provide a concise, engaging 3-4 sentence summary of what this video is li
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '14px 20px',
+                padding: '12px 14px',
+                gap: '8px',
+                flexWrap: 'wrap',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{
-                        width: '32px', height: '32px', borderRadius: '10px',
+                        width: '28px', height: '28px', borderRadius: '8px',
                         background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-                        display: 'grid', placeItems: 'center',
+                        display: 'grid', placeItems: 'center', flexShrink: 0,
                         boxShadow: '0 4px 12px rgba(99,102,241,0.4)'
                     }}>
-                        <Sparkles size={16} color="white" />
+                        <Sparkles size={14} color="white" />
                     </div>
-                    <div>
-                        <span style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-primary)' }}>AI Summary</span>
-                        <span style={{
-                            marginLeft: '8px', fontSize: '11px', fontWeight: '600',
-                            background: 'linear-gradient(90deg, #6366f1, #a855f7)',
-                            padding: '2px 8px', borderRadius: '20px', color: 'white'
-                        }}>Powered by Gemini</span>
-                    </div>
+                    <span style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)' }}>AI Summary</span>
+                    <span className="gemini-badge" style={{
+                        fontSize: '10px', fontWeight: '600',
+                        background: 'linear-gradient(90deg, #6366f1, #a855f7)',
+                        padding: '2px 6px', borderRadius: '20px', color: 'white', whiteSpace: 'nowrap'
+                    }}>Powered by Gemini</span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -113,17 +209,17 @@ Please provide a concise, engaging 3-4 sentence summary of what this video is li
                         <button
                             onClick={generateSummary}
                             style={{
-                                display: 'flex', alignItems: 'center', gap: '6px',
-                                padding: '8px 16px',
+                                display: 'flex', alignItems: 'center', gap: '5px',
+                                padding: '6px 14px',
                                 background: 'linear-gradient(135deg, #6366f1, #a855f7)',
                                 color: 'white', border: 'none', borderRadius: '20px',
-                                cursor: 'pointer', fontSize: '13px', fontWeight: '700',
+                                cursor: 'pointer', fontSize: '12px', fontWeight: '700',
                                 boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
-                                transition: 'all 0.2s ease'
+                                transition: 'all 0.2s ease', whiteSpace: 'nowrap'
                             }}
                         >
-                            <Sparkles size={14} />
-                            Generate Summary
+                            <Sparkles size={12} />
+                            Generate
                         </button>
                     )}
                     {generated && (
@@ -132,7 +228,7 @@ Please provide a concise, engaging 3-4 sentence summary of what this video is li
                             style={{
                                 background: 'transparent', border: '1px solid rgba(99,102,241,0.3)',
                                 color: '#a855f7', borderRadius: '20px', cursor: 'pointer',
-                                padding: '6px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px'
+                                padding: '5px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px'
                             }}
                         >
                             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -140,8 +236,8 @@ Please provide a concise, engaging 3-4 sentence summary of what this video is li
                         </button>
                     )}
                     {loading && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a855f7', fontSize: '13px' }}>
-                            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a855f7', fontSize: '12px' }}>
+                            <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
                             Generating...
                         </div>
                     )}
@@ -150,7 +246,7 @@ Please provide a concise, engaging 3-4 sentence summary of what this video is li
 
             {/* Content */}
             {expanded && (
-                <div style={{ padding: '0 20px 18px 20px' }}>
+                <div style={{ padding: '0 14px 14px 14px' }}>
                     {error && (
                         <div style={{
                             display: 'flex', alignItems: 'flex-start', gap: '10px',

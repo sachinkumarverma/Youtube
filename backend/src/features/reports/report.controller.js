@@ -3,9 +3,9 @@ const reportService = require('./report.service');
 const submit = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const { reason } = req.body;
+    const { reason, comment_id } = req.body;
     if (!reason) return res.status(400).json({ error: 'Reason is required' });
-    const report = await reportService.submitReport(req.user.id, req.params.videoId, reason);
+    const report = await reportService.submitReport(req.user.id, req.params.videoId, reason, comment_id);
     res.status(201).json(report);
   } catch (error) {
     console.error(error);
@@ -26,8 +26,8 @@ const getAll = async (req, res) => {
 const review = async (req, res) => {
   try {
     const { action, feedback } = req.body;
-    if (!['delete', 'reject', 'feedback'].includes(action)) {
-      return res.status(400).json({ error: 'Invalid action. Use: delete, reject, feedback' });
+    if (!['delete', 'delete_comment', 'reject', 'feedback'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action. Use: delete, delete_comment, reject, feedback' });
     }
     const result = await reportService.reviewReport(req.params.id, { action, feedback });
     res.json(result);

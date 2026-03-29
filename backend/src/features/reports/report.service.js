@@ -3,13 +3,14 @@ const { query } = require('../../lib/db');
 const { generateId } = require('../../lib/id');
 const videoService = require('../videos/video.service');
 
-const submitReport = async (userId, videoId, reason) => {
-  // Log audit
+const submitReport = async (userId, videoId, reason, commentId = null) => {
+  const entityType = commentId ? 'comment' : 'video';
+  const entityId = commentId || videoId;
   await query(
     'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
-    ['REPORT_SUBMITTED', 'video', videoId, userId, JSON.stringify({ reason })]
+    ['REPORT_SUBMITTED', entityType, entityId, userId, JSON.stringify({ reason, video_id: videoId, comment_id: commentId })]
   );
-  return reportRepo.create({ video_id: videoId, reporter_id: userId, reason });
+  return reportRepo.create({ video_id: videoId, reporter_id: userId, reason, comment_id: commentId });
 };
 
 const getAllReports = async (filters) => {
@@ -43,6 +44,16 @@ const reviewReport = async (reportId, { action, feedback, adminId }) => {
     await query(
       'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
       ['ADMIN_REPORT_REJECTED', 'report', reportId, adminId, JSON.stringify({ feedback })]
+    );
+
+  } else if (action === 'delete_comment') {
+    if (!report.comment_id) throw { status: 400, message: 'No comment associated with this report' };
+    await query('DELETE FROM comments WHERE id = $1', [report.comment_id]);
+    await reportRepo.updateStatus(reportId, { status: 'deleted', admin_feedback: feedback || 'Comment removed for policy violation' });
+
+    await query(
+      'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+      ['ADMIN_COMMENT_DELETED', 'comment', report.comment_id, adminId, JSON.stringify({ report_id: reportId, video_id: report.video_id, feedback })]
     );
 
   } else if (action === 'feedback') {

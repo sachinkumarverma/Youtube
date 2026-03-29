@@ -46,4 +46,9 @@ const deleteLike = async (id) => {
   return { success: true };
 };
 
-module.exports = { findComment, createComment, findLike, createLike, updateLike, deleteLike };
+const deleteComment = async (id) => {
+  await query('DELETE FROM comments WHERE id = $1', [id]);
+  return { success: true };
+};
+
+module.exports = { findComment, createComment, deleteComment, findLike, createLike, updateLike, deleteLike };

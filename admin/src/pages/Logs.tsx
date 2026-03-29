@@ -101,25 +101,27 @@ export default function Logs() {
     return (
         <div className="animate-in">
             <div className="page-header">
-                <div>
-                    <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Audit Trail & System Logs</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>{meta.total} events tracked globally</p>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <div style={{ position: 'relative' }}>
-                        <button className="btn btn-ghost" onClick={() => setShowDownloadMenu(!showDownloadMenu)}>
-                            <Download size={16} /> Download
-                        </button>
-                        {showDownloadMenu && (
-                            <div style={{ position: 'absolute', top: '100%', right: 0, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 10, minWidth: '120px', padding: '4px', marginTop: '4px' }}>
-                                <button className="btn btn-ghost btn-sm" style={{ width: '100%', textAlign: 'left', display: 'block' }} onClick={() => downloadLogs('json')}>JSON Format</button>
-                                <button className="btn btn-ghost btn-sm" style={{ width: '100%', textAlign: 'left', display: 'block' }} onClick={() => downloadLogs('csv')}>CSV Format</button>
-                            </div>
-                        )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>Audit Trail & System Logs</h2>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>{meta.total} events tracked</p>
                     </div>
-                    <button className="btn btn-ghost" onClick={() => fetchLogs(meta.page)}>
-                        <RefreshCw size={16} className={loading ? 'spin' : ''} /> Refresh
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                        <div style={{ position: 'relative' }}>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setShowDownloadMenu(!showDownloadMenu)} title="Download">
+                                <Download size={16} /> <span className="hide-mobile">Download</span>
+                            </button>
+                            {showDownloadMenu && (
+                                <div style={{ position: 'absolute', top: '100%', right: 0, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 10, minWidth: '120px', padding: '4px', marginTop: '4px' }}>
+                                    <button className="btn btn-ghost btn-sm" style={{ width: '100%', textAlign: 'left', display: 'block' }} onClick={() => downloadLogs('json')}>JSON</button>
+                                    <button className="btn btn-ghost btn-sm" style={{ width: '100%', textAlign: 'left', display: 'block' }} onClick={() => downloadLogs('csv')}>CSV</button>
+                                </div>
+                            )}
+                        </div>
+                        <button className="btn btn-ghost btn-sm" onClick={() => fetchLogs(meta.page)} title="Refresh">
+                            <RefreshCw size={16} className={loading ? 'spin' : ''} /> <span className="hide-mobile">Refresh</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -134,12 +136,17 @@ export default function Logs() {
                             fetchLogs(1, { ...filters, action: newAction });
                         }} style={{ minWidth: '220px' }}>
                             <option value="">All Events</option>
-                            <option value="SYSTEM_ERROR">System Errors</option>
+                            <option value="VIDEO_UPLOADED">Video Uploads</option>
+                            <option value="VIDEO_DELETED">Video Deletions</option>
+                            <option value="COMMENT_ADDED">Comments Added</option>
+                            <option value="COMMENT_DELETED">Comments Deleted</option>
                             <option value="REPORT_SUBMITTED">User Reports</option>
-                            <option value="ADMIN_VIDEO_DELETED">Video Removals</option>
+                            <option value="ADMIN_VIDEO_DELETED">Admin Video Removals</option>
+                            <option value="ADMIN_COMMENT_DELETED">Admin Comment Removals</option>
                             <option value="ADMIN_REPORT_REJECTED">Report Rejections</option>
                             <option value="ADMIN_FEEDBACK_SENT">Admin Feedbacks</option>
                             <option value="ADMIN_LOGIN">Admin Logins</option>
+                            <option value="SYSTEM_ERROR">System Errors</option>
                         </select>
                     </div>
                     <div className="input-group">
@@ -150,7 +157,7 @@ export default function Logs() {
                         <label className="input-label">Date To</label>
                         <input className="input" type="date" value={filters.to} onChange={e => setFilters(p => ({ ...p, to: e.target.value }))} />
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-end', marginLeft: 'auto' }}>
                         <button className="btn btn-primary" onClick={() => fetchLogs(1)}>
                             <Filter size={14} /> Filter
                         </button>
@@ -228,7 +235,7 @@ export default function Logs() {
                         </div>
 
                         {/* Pagination and Limit */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
+                        <div className="logs-pagination-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', gap: '16px', flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Logs per page:</span>
                                 <select
@@ -292,7 +299,7 @@ export default function Logs() {
                                 <button className="btn btn-ghost btn-sm" onClick={() => setSelectedLog(null)}>✕</button>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div className="modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                     <div>
                                         <label className="input-label">Action</label>
                                         <div style={{ padding: '8px', background: 'var(--bg-tertiary)', borderRadius: '6px', fontWeight: 700, fontSize: '13px', color: getActionColor(selectedLog.action) }}>
@@ -322,7 +329,7 @@ export default function Logs() {
                                         {JSON.stringify(typeof selectedLog.details === 'string' ? JSON.parse(selectedLog.details || '{}') : selectedLog.details, null, 2)}
                                     </pre>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div className="modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                     <div>
                                         <label className="input-label">Initiator</label>
                                         <div style={{ fontSize: '14px' }}>{selectedLog.username || 'System Process'}</div>

@@ -9,6 +9,7 @@ import VideoCard from '../components/VideoCard';
 import Skeleton from '../components/Skeleton';
 import VideoSkeleton from '../components/VideoSkeleton';
 import AIThumbnailGenerator from '../components/AIThumbnailGenerator';
+import { useToast } from '../components/Toast';
 
 interface ChannelData {
     user: {
@@ -40,6 +41,7 @@ export default function ChannelDetail() {
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [activeTab, setActiveTab] = useState<'videos' | 'about'>('videos');
     const { t } = useTranslation();
+    const { showToast } = useToast();
     const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 
     // Profile Edit State
@@ -101,7 +103,10 @@ export default function ChannelDetail() {
 
     const handleSubscribe = async () => {
         const token = localStorage.getItem('token');
-        if (!token) return alert('Please login to subscribe!');
+        if (!token) {
+            showToast('Please login to subscribe!', 'error');
+            return;
+        }
         try {
             const res = await axios.post(`${API_BASE_URL}/user/subscribe/${id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -163,7 +168,7 @@ export default function ChannelDetail() {
             window.dispatchEvent(new Event('storage'));
         } catch (err: any) {
             console.error(err);
-            alert(err.response?.data?.error || 'Failed to update profile');
+            showToast(err.response?.data?.error || 'Failed to update profile', 'error');
         } finally {
             setSaving(false);
         }

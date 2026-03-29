@@ -37,9 +37,9 @@ export default function Users() {
 
     return (
         <div className="animate-in">
-            <div className="page-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div className="stat-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent)' }}>
+            <div className="page-header" style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                    <div className="stat-icon hide-mobile-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: 'var(--accent)' }}>
                         <UsersIcon size={24} />
                     </div>
                     <div>
@@ -47,7 +47,7 @@ export default function Users() {
                         <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>View and manage all registered platform users</p>
                     </div>
                 </div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '600' }}>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '600', flexShrink: 0, textAlign: 'right' }}>
                     {loading ? <Skeleton width="80px" height="18px" /> : `${users.length} Total Users`}
                 </div>
             </div>

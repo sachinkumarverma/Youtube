@@ -36,12 +36,11 @@ export default function Comments() {
     };
 
     const deleteComment = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this comment?')) return;
         try {
             await axios.delete(`${API_BASE_URL}/comments/${id}`);
             setComments(comments.filter(c => c.id !== id));
         } catch (err) {
-            alert('Failed to delete comment');
+            console.error('Failed to delete comment', err);
         }
     };
 

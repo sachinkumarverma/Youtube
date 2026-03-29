@@ -33,6 +33,12 @@ const createVideo = async (userId, { title, description, video_url, thumbnail_ur
     category, duration: duration || '0', user_id: userId
   });
 
+  // Audit log
+  await query(
+    'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+    ['VIDEO_UPLOADED', 'video', video.id, userId, JSON.stringify({ title, category })]
+  );
+
   // Notify subscribers
   const subscribersResult = await query(
     'SELECT subscriber_id FROM subscriptions WHERE channel_id = $1 AND notifications_on = true',
@@ -120,6 +126,10 @@ const updateVideo = async (userId, videoId, { title, description, category }, fi
 const deleteVideo = async (userId, videoId) => {
   const video = await videoRepo.findByIdSimple(videoId);
   if (!video || video.user_id !== userId) throw { status: 403, message: 'Forbidden' };
+  await query(
+    'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+    ['VIDEO_DELETED', 'video', videoId, userId, JSON.stringify({ title: video.title })]
+  );
   await videoRepo.remove(videoId);
   return { success: true };
 };

@@ -7,6 +7,7 @@ import Logs from './pages/Logs';
 import Users from './pages/Users';
 import Comments from './pages/Comments';
 import Layout from './components/Layout';
+import OfflineBanner from './components/OfflineBanner';
 import './index.css';
 
 const ProtectedRoute = () => {
@@ -17,6 +18,7 @@ const ProtectedRoute = () => {
 function App() {
   return (
     <BrowserRouter>
+      <OfflineBanner />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute />}>

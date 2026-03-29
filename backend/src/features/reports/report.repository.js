@@ -1,21 +1,24 @@
 const { query } = require('../../lib/db');
 
-const create = async ({ video_id, reporter_id, reason }) => {
+const create = async ({ video_id, reporter_id, reason, comment_id = null }) => {
   const result = await query(
-    'INSERT INTO reports (video_id, reporter_id, reason) VALUES ($1, $2, $3) RETURNING *',
-    [video_id, reporter_id, reason]
+    'INSERT INTO reports (video_id, reporter_id, reason, comment_id) VALUES ($1, $2, $3, $4) RETURNING *',
+    [video_id, reporter_id, reason, comment_id]
   );
   return result.rows[0];
 };
 
 const findAll = async (filters = {}) => {
-  let sql = `SELECT r.*, v.title as video_title, v.thumbnail_url, 
+  let sql = `SELECT r.*, v.title as video_title, v.thumbnail_url,
                     reporter.username as reporter_username,
-                    uploader.username as uploader_username, v.user_id as uploader_id
+                    uploader.username as uploader_username, v.user_id as uploader_id,
+                    c.content as comment_content, comment_user.username as comment_username
              FROM reports r
              JOIN videos v ON r.video_id = v.id
              JOIN users reporter ON r.reporter_id = reporter.id
-             JOIN users uploader ON v.user_id = uploader.id`;
+             JOIN users uploader ON v.user_id = uploader.id
+             LEFT JOIN comments c ON r.comment_id = c.id
+             LEFT JOIN users comment_user ON c.user_id = comment_user.id`;
   const params = [];
   const clauses = [];
 
@@ -35,7 +38,7 @@ const findById = async (id) => {
     `SELECT r.*, v.title as video_title, v.user_id as uploader_id,
             reporter.username as reporter_username
      FROM reports r
-     JOIN videos v ON r.video_id = v.id
+     LEFT JOIN videos v ON r.video_id = v.id
      JOIN users reporter ON r.reporter_id = reporter.id
      WHERE r.id = $1`,
     [id]

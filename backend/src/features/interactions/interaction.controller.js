@@ -16,4 +16,12 @@ const toggleLike = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-module.exports = { addComment, toggleLike };
+const deleteComment = async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const result = await interactionService.deleteComment(req.user.id, req.params.commentId);
+    res.json(result);
+  } catch (error) { next(error); }
+};
+
+module.exports = { addComment, toggleLike, deleteComment };

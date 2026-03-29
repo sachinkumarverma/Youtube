@@ -8,6 +8,7 @@ import VideoSkeleton from '../components/VideoSkeleton';
 import Skeleton from '../components/Skeleton';
 import VideoCard from '../components/VideoCard';
 import AIThumbnailGenerator from '../components/AIThumbnailGenerator';
+import { useToast } from '../components/Toast';
 
 export default function YourChannel() {
     const [videos, setVideos] = useState<any[]>([]);
@@ -22,6 +23,7 @@ export default function YourChannel() {
     const [newThumbnailFile, setNewThumbnailFile] = useState<File | null>(null);
 
     const { t } = useTranslation();
+    const { showToast } = useToast();
 
     const fetchVideos = async () => {
         try {
@@ -83,7 +85,7 @@ export default function YourChannel() {
             setEditingVideo(null);
             fetchVideos();
         } catch (err) {
-            alert('Failed to edit video');
+            showToast('Failed to edit video', 'error');
         }
     };
 
@@ -97,7 +99,7 @@ export default function YourChannel() {
             setDeletingVideoId(null);
             fetchVideos();
         } catch (err) {
-            alert('Failed to delete video');
+            showToast('Failed to delete video', 'error');
         }
     };
 

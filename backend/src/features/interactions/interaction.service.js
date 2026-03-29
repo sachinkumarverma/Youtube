@@ -2,6 +2,13 @@ const interactionRepo = require('./interaction.repository');
 const { query } = require('../../lib/db');
 const { generateId } = require('../../lib/id');
 
+const auditLog = async (action, entityType, entityId, userId, details) => {
+  await query(
+    'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+    [action, entityType, entityId, userId, JSON.stringify(details)]
+  );
+};
+
 const addComment = async (userId, videoId, content) => {
   const videoResult = await query('SELECT * FROM videos WHERE id = $1', [videoId]);
   const video = videoResult.rows[0];
@@ -10,6 +17,8 @@ const addComment = async (userId, videoId, content) => {
   const comment = await interactionRepo.createComment({
     content, video_id: videoId, user_id: userId
   });
+
+  await auditLog('COMMENT_ADDED', 'comment', comment.id, userId, { video_id: videoId, video_title: video.title, content });
 
   // Notify video owner
   if (video.user_id !== userId) {
@@ -56,4 +65,12 @@ const toggleLike = async (userId, videoId, type) => {
   }
 };
 
-module.exports = { addComment, toggleLike };
+const deleteComment = async (userId, commentId) => {
+  const comment = await interactionRepo.findComment(commentId);
+  if (!comment) throw { status: 404, message: 'Comment not found' };
+  if (comment.user_id !== userId) throw { status: 403, message: 'Not authorized to delete this comment' };
+  await auditLog('COMMENT_DELETED', 'comment', commentId, userId, { video_id: comment.video_id, content: comment.content });
+  return interactionRepo.deleteComment(commentId);
+};
+
+module.exports = { addComment, toggleLike, deleteComment };

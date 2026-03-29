@@ -167,30 +167,7 @@ a {
 }
 
 .sidebar.collapsed .sidebar-text {
-  display: block;
-  position: absolute;
-  left: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-left: 8px;
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  z-index: 1000;
-  transition: opacity 0.05s ease, visibility 0.05s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.sidebar.collapsed .sidebar-link:hover .sidebar-text {
-  opacity: 1;
-  visibility: visible;
+  display: none;
 }
 
 .sidebar-link::before {
@@ -251,6 +228,15 @@ a {
   height: 1px;
   background: var(--border);
   margin: 12px 0;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 140;
+  animation: fadeIn 0.3s ease;
 }
 
 .sidebar-section-title {
@@ -824,11 +810,11 @@ tbody tr:hover {
     width: 72px;
     min-width: 72px;
     padding: 16px 4px;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .sidebar-section-title,
-  .sidebar-user > div:not(.sidebar-avatar) {
+  .sidebar-user>div:not(.sidebar-avatar) {
     display: none;
   }
 
@@ -838,28 +824,7 @@ tbody tr:hover {
   }
 
   .sidebar-link .sidebar-text {
-    display: block;
-    position: absolute;
-    left: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-left: 8px;
-    background: var(--text-primary);
-    color: var(--bg-primary);
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    z-index: 1000;
-  }
-
-  .sidebar-link:hover .sidebar-text {
-    opacity: 1;
-    visibility: visible;
+    display: none;
   }
 
   .sidebar-user {
@@ -868,15 +833,33 @@ tbody tr:hover {
 }
 
 @media (max-width: 640px) {
+
+  /* Hide text labels on mobile */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Navbar */
+  .admin-navbar {
+    height: 56px;
+    padding: 0 12px;
+  }
+
+  /* Sidebar as mobile overlay */
   .sidebar {
     position: fixed;
-    top: 64px;
+    top: 56px;
     left: 0;
+    bottom: 0;
+    width: 260px !important;
+    min-width: 260px !important;
     transform: translateX(-100%);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.8);
     z-index: 150;
-    width: 240px;
     padding: 16px 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: transform 0.3s ease;
   }
 
   .sidebar:not(.collapsed) {
@@ -887,25 +870,194 @@ tbody tr:hover {
     transform: translateX(-100%);
   }
 
+  /* Show all sidebar content on mobile overlay */
+  .sidebar-section-title {
+    display: block !important;
+  }
+
   .sidebar-link {
     justify-content: flex-start;
     padding: 12px 16px;
   }
 
   .sidebar-link .sidebar-text {
-    position: static;
-    opacity: 1;
-    visibility: visible;
-    transform: none;
+    display: inline !important;
+    position: static !important;
+    left: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
     margin-left: 0;
     background: transparent;
     color: inherit;
     padding: 0;
     box-shadow: none;
   }
+
+  /* Show username & email on mobile sidebar */
+  .sidebar-user {
+    justify-content: flex-start;
+  }
+
+  .sidebar-user>div:not(.sidebar-avatar) {
+    display: block !important;
+  }
+
+  /* Overlay */
+  .sidebar-overlay {
+    top: 56px;
+  }
+
+  /* Body offset */
+  .admin-body {
+    margin-top: 56px;
+  }
+
+  /* Page layout */
+  .page-header {
+    padding: 12px 16px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    top: 56px;
+  }
+
+  .page-header h2 {
+    font-size: 16px !important;
+  }
+
+  .page-header p {
+    font-size: 11px !important;
+  }
+
+  .page-body {
+    padding: 12px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    padding: 12px !important;
+    gap: 10px !important;
+    flex-direction: column !important;
+  }
+
+  /* Keep filter pills horizontal */
+  .filter-bar:has(.filter-pill) {
+    flex-direction: row !important;
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-bar:has(.filter-pill)::-webkit-scrollbar {
+    height: 0;
+  }
+
+  .hide-mobile-icon {
+    display: none;
+  }
+
+  .input-group {
+    width: 100%;
+  }
+
+  .input-label {
+    font-size: 11px;
+  }
+
+  /* Tables → scrollable on mobile */
+  .table-container {
+    border-radius: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  th,
+  td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  /* Reports */
+  .report-card {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .report-card>div:last-child {
+    width: 100%;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+  }
+
+  .report-card .btn {
+    flex: 1;
+  }
+
+  /* Modal */
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  /* Pagination */
+  .pagination {
+    flex-wrap: wrap;
+  }
+
+  /* Logs page */
+  .logs-pagination-bar {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .logs-pagination-bar>div:first-child {
+    white-space: nowrap;
+    font-size: 12px !important;
+  }
+
+  .logs-pagination-bar>div:first-child span {
+    font-size: 12px !important;
+  }
+
+  .modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Input min-width reset */
+  .input {
+    min-width: 0 !important;
+  }
 }
 
 .table-container::-webkit-scrollbar {
   height: 6px;
 }
-

@@ -109,7 +109,11 @@ export default function Videos() {
                                     <tr key={v.id}>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <img src={v.thumbnail_url || 'https://via.placeholder.com/80x45'} alt="" style={{ width: '80px', height: '45px', borderRadius: '6px', objectFit: 'cover', background: 'var(--bg-tertiary)' }} />
+                                                {v.thumbnail_url ? (
+                                                    <img src={v.thumbnail_url} alt="" style={{ width: '80px', height: '45px', borderRadius: '6px', objectFit: 'cover', background: 'var(--bg-tertiary)' }} />
+                                                ) : (
+                                                    <video src={`${v.video_url}#t=1.0`} style={{ width: '80px', height: '45px', borderRadius: '6px', objectFit: 'cover', background: 'var(--bg-tertiary)' }} preload="metadata" muted playsInline />
+                                                )}
                                                 <span style={{ fontWeight: 600, fontSize: '13px', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                                                     {v.title}
                                                 </span>

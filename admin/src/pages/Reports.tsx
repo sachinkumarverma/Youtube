@@ -76,9 +76,9 @@ export default function Reports() {
 
             <div className="page-body animate-in">
                 {/* Filters */}
-                <div className="filter-bar" style={{ marginBottom: '24px' }}>
+                <div className="filter-bar" style={{ marginBottom: '24px', flexDirection: 'row', overflowX: 'auto', flexWrap: 'nowrap' }}>
                     {['', 'pending', 'reviewed', 'deleted', 'rejected'].map(f => (
-                        <button key={f} className={`filter-pill ${statusFilter === f ? 'active' : ''}`} onClick={() => setStatusFilter(f)}>
+                        <button key={f} className={`filter-pill ${statusFilter === f ? 'active' : ''}`} onClick={() => setStatusFilter(f)} style={{ flexShrink: 0 }}>
                             {f || 'All'}
                         </button>
                     ))}
@@ -99,8 +99,13 @@ export default function Reports() {
                                         <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{formatDateIST(r.created_at)}</span>
                                     </div>
                                     <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px' }}>
-                                        Video: {r.video_title}
+                                        {r.comment_id ? 'Comment' : 'Video'}: {r.video_title}
                                     </div>
+                                    {r.comment_id && r.comment_content && (
+                                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', padding: '8px 12px', background: 'var(--bg-primary)', borderRadius: '6px', borderLeft: '3px solid var(--info)' }}>
+                                            <strong>{r.comment_username}:</strong> "{r.comment_content}"
+                                        </div>
+                                    )}
                                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                                         Reported by <strong style={{ color: 'var(--text-primary)' }}>{r.reporter_username}</strong> • Uploaded by <strong style={{ color: 'var(--text-primary)' }}>{r.uploader_username}</strong>
                                     </div>
@@ -116,9 +121,15 @@ export default function Reports() {
 
                                 {r.status === 'pending' && (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
-                                        <button className="btn btn-danger btn-sm" onClick={() => { setReviewing(r); setReviewAction('delete'); }}>
-                                            <Trash2 size={14} /> Delete Video
-                                        </button>
+                                        {r.comment_id ? (
+                                            <button className="btn btn-danger btn-sm" onClick={() => { setReviewing(r); setReviewAction('delete_comment'); }}>
+                                                <Trash2 size={14} /> Delete Comment
+                                            </button>
+                                        ) : (
+                                            <button className="btn btn-danger btn-sm" onClick={() => { setReviewing(r); setReviewAction('delete'); }}>
+                                                <Trash2 size={14} /> Delete Video
+                                            </button>
+                                        )}
                                         <button className="btn btn-info btn-sm" onClick={() => { setReviewing(r); setReviewAction('feedback'); }}>
                                             <Send size={14} /> Feedback
                                         </button>
@@ -149,8 +160,8 @@ export default function Reports() {
                             <p style={{ fontSize: '14px', marginBottom: '6px' }}><strong>Reason:</strong> {reviewing.reason}</p>
                             <p style={{ fontSize: '14px' }}>
                                 <strong>Action:</strong>{' '}
-                                <span style={{ fontWeight: 700, textTransform: 'capitalize', color: reviewAction === 'delete' ? 'var(--danger)' : reviewAction === 'reject' ? '#a855f7' : 'var(--info)' }}>
-                                    {reviewAction}
+                                <span style={{ fontWeight: 700, textTransform: 'capitalize', color: (reviewAction === 'delete' || reviewAction === 'delete_comment') ? 'var(--danger)' : reviewAction === 'reject' ? '#a855f7' : 'var(--info)' }}>
+                                    {reviewAction === 'delete_comment' ? 'Delete Comment' : reviewAction}
                                 </span>
                             </p>
                         </div>
@@ -166,16 +177,17 @@ export default function Reports() {
                             <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { setReviewing(null); setFeedback(''); }}>Cancel</button>
                             <button
                                 className="btn"
-                                style={{ flex: 1, background: reviewAction === 'delete' ? 'var(--danger)' : reviewAction === 'reject' ? '#a855f7' : 'var(--info)', color: '#fff' }}
+                                style={{ flex: 1, background: (reviewAction === 'delete' || reviewAction === 'delete_comment') ? 'var(--danger)' : reviewAction === 'reject' ? '#a855f7' : 'var(--info)', color: '#fff' }}
                                 onClick={handleReview}
                                 disabled={submitting}
                             >
-                                {submitting ? 'Processing...' : reviewAction === 'delete' ? 'Delete Video' : reviewAction === 'reject' ? 'Reject Report' : 'Send Feedback'}
+                                {submitting ? 'Processing...' : reviewAction === 'delete' ? 'Delete Video' : reviewAction === 'delete_comment' ? 'Delete Comment' : reviewAction === 'reject' ? 'Reject Report' : 'Send Feedback'}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
         </>
     );
 }

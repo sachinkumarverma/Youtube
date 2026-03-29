@@ -39,7 +39,12 @@ router.get('/comments', authenticateAdmin, adminController.getComments);
 router.delete('/comments/:id', authenticateAdmin, async (req, res, next) => {
   try {
     const { query } = require('../../lib/db');
+    const comment = await query('SELECT * FROM comments WHERE id = $1', [req.params.id]);
     await query('DELETE FROM comments WHERE id = $1', [req.params.id]);
+    await query(
+      'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, details) VALUES ($1, $2, $3, $4, $5)',
+      ['ADMIN_COMMENT_DELETED', 'comment', req.params.id, req.user.id, JSON.stringify({ content: comment.rows[0]?.content, video_id: comment.rows[0]?.video_id })]
+    );
     res.json({ success: true });
   } catch (error) { next(error); }
 });

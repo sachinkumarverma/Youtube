@@ -2,16 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../constants';
-import { ThumbsUp, Share2, SkipBack, SkipForward, Clock, UserPlus, UserMinus, User, Flag, Check } from 'lucide-react';
+import { ThumbsUp, Share2, SkipBack, SkipForward, Clock, UserPlus, UserMinus, User, Flag, Check, MessageSquare, X, MoreVertical, Trash2, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import ShareModal from '../components/ShareModal';
 import ReportModal from '../components/ReportModal';
+import VideoCard from '../components/VideoCard';
 import { useTranslation } from '../i18n';
 import VideoPlayerSkeleton from '../components/VideoPlayerSkeleton';
 import AISummaryPanel from '../components/AISummaryPanel';
+import { useToast } from '../components/Toast';
 
 interface Comment {
     id: string;
     content: string;
+    user_id: string;
     user: { username: string, avatar_url: string | null };
     created_at: string;
 }
@@ -41,9 +44,25 @@ export default function VideoPlayer() {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [showShareModal, setShowShareModal] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
+    const [relatedVideos, setRelatedVideos] = useState<any[]>([]);
+    const [showCommentsModal, setShowCommentsModal] = useState(false);
+    const [commentMenuId, setCommentMenuId] = useState<string | null>(null);
+    const [reportingCommentId, setReportingCommentId] = useState<string | undefined>(undefined);
+    const [isSidebarVisible, setIsSidebarVisible] = useState(true);
     const { t } = useTranslation();
+    const { showToast } = useToast();
     const videoRef = useRef<HTMLVideoElement>(null);
     const viewedRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        const closeMenu = (e: MouseEvent) => {
+            if (commentMenuId && !(e.target as HTMLElement).closest('[data-comment-menu]')) {
+                setCommentMenuId(null);
+            }
+        };
+        document.addEventListener('click', closeMenu);
+        return () => document.removeEventListener('click', closeMenu);
+    }, [commentMenuId]);
 
     useEffect(() => {
         const fetchVideo = async () => {
@@ -80,6 +99,10 @@ export default function VideoPlayer() {
                         }).catch(console.error);
                     }
                 }
+                // Fetch related videos
+                axios.get(`${API_BASE_URL}/videos`)
+                    .then(res => setRelatedVideos(res.data.filter((v: any) => v.id !== id).slice(0, 12)))
+                    .catch(console.error);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -87,11 +110,15 @@ export default function VideoPlayer() {
             }
         };
         fetchVideo();
+        setShowCommentsModal(false);
     }, [id]);
 
     const handleLike = async () => {
         const token = localStorage.getItem('token');
-        if (!token) return alert('Please login to like!');
+        if (!token) {
+            showToast('Please login to like!', 'error');
+            return;
+        }
 
         // Optimistic update using current state
         const willBeLiked = !isLiked;
@@ -121,7 +148,10 @@ export default function VideoPlayer() {
 
     const handleWatchLater = async () => {
         const token = localStorage.getItem('token');
-        if (!token) return alert('Please login to save!');
+        if (!token) {
+            showToast('Please login to save!', 'error');
+            return;
+        }
         try {
             const res = await axios.post(`${API_BASE_URL}/user/watch-later/${id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -133,20 +163,28 @@ export default function VideoPlayer() {
     const handleSubscribe = async () => {
         if (!video) return;
         const token = localStorage.getItem('token');
-        if (!token) return alert('Please login to subscribe!');
+        if (!token) {
+            showToast('Please login to subscribe!', 'error');
+            return;
+        }
         try {
             const res = await axios.post(`${API_BASE_URL}/user/subscribe/${video.user_id}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setIsSubscribed(res.data.subscribed);
-        } catch (err: any) { alert(err.response?.data?.error || 'Failed to subscribe'); }
+        } catch (err: any) {
+            showToast(err.response?.data?.error || 'Failed to subscribe', 'error');
+        }
     };
 
     const handleComment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!commentText.trim()) return;
         const token = localStorage.getItem('token');
-        if (!token) return alert('Please login to comment!');
+        if (!token) {
+            showToast('Please login to comment!', 'error');
+            return;
+        }
 
         try {
             const res = await axios.post(`${API_BASE_URL}/videos/${id}/comment`, { content: commentText }, {
@@ -156,6 +194,22 @@ export default function VideoPlayer() {
             setCommentText('');
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const handleDeleteComment = async (commentId: string) => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            await axios.delete(`${API_BASE_URL}/comments/${commentId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setVideo(prev => prev ? { ...prev, comments: prev.comments.filter(c => c.id !== commentId) } : null);
+            setCommentMenuId(null);
+            showToast('Comment deleted', 'success');
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to delete comment', 'error');
         }
     };
 
@@ -175,129 +229,240 @@ export default function VideoPlayer() {
         </div>
     );
 
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+    const previewComments = video.comments?.slice(0, 5) || [];
+    const hasMoreComments = (video.comments?.length || 0) > 5;
 
-            <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
-                <video
-                    ref={videoRef}
-                    src={video.video_url}
-                    controls
-                    autoPlay
-                    style={{ width: '100%', height: '100%', outline: 'none' }}
-                />
-            </div>
+    const isOwnComment = (comment: Comment) => currentUser?.id === comment.user_id;
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>{video.title}</h1>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <Link to={`/channel/${video.user_id}`} style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-secondary)', overflow: 'hidden', display: 'block', textDecoration: 'none', color: 'inherit' }}>
-                            {video.user.avatar_url ? (
-                                <img src={video.user.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold' }}>
-                                    {video.user.username.charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                        </Link>
-                        <div>
-                            <Link to={`/channel/${video.user_id}`} style={{ fontWeight: 'bold', fontSize: '18px', textDecoration: 'none', color: 'inherit', display: 'block' }}>{video.user.username}</Link>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{video.views} {t('views')} • {new Date(video.created_at).toLocaleDateString()}</div>
-                        </div>
-                        {(!currentUser || currentUser?.id !== video.user_id) && (
-                            <button onClick={handleSubscribe} className="subscribe-btn" style={{ marginLeft: '12px', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: isSubscribed ? 'var(--bg-hover)' : 'var(--text-primary)', color: isSubscribed ? 'var(--text-primary)' : 'var(--bg-primary)', border: isSubscribed ? '1px solid var(--border)' : 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: '800', fontSize: '15px' }}>
-                                {isSubscribed ? <><UserMinus size={18} /> {t('unsubscribe')}</> : <><UserPlus size={18} /> {t('subscribe')}</>}
-                            </button>
-                        )}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button onClick={() => skipVideo(-2)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            <SkipBack size={20} />
-                        </button>
-                        <button onClick={() => skipVideo(2)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            <SkipForward size={20} />
-                        </button>
-                        <button onClick={handleLike} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            <ThumbsUp size={20} fill={isLiked ? 'var(--text-primary)' : 'none'} /> {likesCount}
-                        </button>
-                        <button onClick={handleWatchLater} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: isWatchLater ? 'rgba(62, 166, 255, 0.1)' : 'var(--bg-hover)', color: isWatchLater ? '#3ea6ff' : 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            {isWatchLater ? <Check size={20} /> : <Clock size={20} />} {isWatchLater ? 'Saved' : t('watchLater')}
-                        </button>
-                        <button onClick={() => setShowShareModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            <Share2 size={20} /> {t('share')}
-                        </button>
-                        <button onClick={() => setShowReportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            <Flag size={20} /> Report
-                        </button>
-                    </div>
-                </div>
-
-                {video.description && (
-                    <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', fontSize: '15px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
-                        {video.description}
+    const renderComment = (comment: Comment) => (
+        <div key={comment.id} style={{ display: 'flex', gap: '12px', position: 'relative' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
+                {comment.user.avatar_url ? (
+                    <img src={comment.user.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold' }}>
+                        {comment.user.username.charAt(0).toUpperCase()}
                     </div>
                 )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'baseline' }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '13px' }}>{comment.user.username}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{new Date(comment.created_at).toLocaleDateString()}</span>
+                </div>
+                <div style={{ fontSize: '14px' }}>{comment.content}</div>
+            </div>
+            {currentUser && (
+                <div style={{ position: 'relative', flexShrink: 0 }} data-comment-menu>
+                    <button
+                        onClick={() => setCommentMenuId(commentMenuId === comment.id ? null : comment.id)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', borderRadius: '50%' }}
+                    >
+                        <MoreVertical size={16} />
+                    </button>
+                    {commentMenuId === comment.id && (
+                        <div style={{ position: 'absolute', right: 0, top: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', minWidth: '140px', zIndex: 10, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                            {isOwnComment(comment) ? (
+                                <button
+                                    onClick={() => handleDeleteComment(comment.id)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}
+                                >
+                                    <Trash2 size={14} /> Delete
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => { setReportingCommentId(comment.id); setShowReportModal(true); setCommentMenuId(null); }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 14px', background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '13px', fontWeight: 500 }}
+                                >
+                                    <Flag size={14} /> Report
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 
-                {/* ── AI Features Section ── */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
+    return (
+        <div className={`video-page-layout ${!isSidebarVisible ? 'sidebar-hidden' : ''}`} style={{ position: 'relative' }}>
+            {/* Sidebar Toggle Button (Desktop only) */}
+            <div className="sidebar-toggle-container">
+                <button
+                    onClick={() => setIsSidebarVisible(!isSidebarVisible)}
+                    style={{
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-primary)',
+                        padding: '10px',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        boxShadow: 'var(--shadow)',
+                        zIndex: 10
+                    }}
+                    title={isSidebarVisible ? "Hide side panel" : "Show side panel"}
+                >
+                    {isSidebarVisible ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+                </button>
+            </div>
+
+            {/* Left Column: Video + Info + Comments */}
+            <div className="video-page-main">
+                <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
+                    <video
+                        ref={videoRef}
+                        src={video.video_url}
+                        controls
+                        autoPlay
+                        style={{ width: '100%', height: '100%', outline: 'none' }}
+                    />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+                    <h1 style={{ fontSize: '22px', fontWeight: 'bold' }}>{video.title}</h1>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <Link to={`/channel/${video.user_id}`} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'var(--bg-secondary)', overflow: 'hidden', display: 'block', textDecoration: 'none', color: 'inherit', flexShrink: 0 }}>
+                                {video.user.avatar_url ? (
+                                    <img src={video.user.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold' }}>
+                                        {video.user.username.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </Link>
+                            <div>
+                                <Link to={`/channel/${video.user_id}`} style={{ fontWeight: 'bold', fontSize: '16px', textDecoration: 'none', color: 'inherit', display: 'block' }}>{video.user.username}</Link>
+                                <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{video.views} {t('views')} • {new Date(video.created_at).toLocaleDateString()}</div>
+                            </div>
+                            {(!currentUser || currentUser?.id !== video.user_id) && (
+                                <button onClick={handleSubscribe} className="subscribe-btn" style={{ marginLeft: '8px', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 18px', background: isSubscribed ? 'var(--bg-hover)' : 'var(--text-primary)', color: isSubscribed ? 'var(--text-primary)' : 'var(--bg-primary)', border: isSubscribed ? '1px solid var(--border)' : 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: '700', fontSize: '14px' }}>
+                                    {isSubscribed ? <><UserMinus size={16} /> {t('unsubscribe')}</> : <><UserPlus size={16} /> {t('subscribe')}</>}
+                                </button>
+                            )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <button onClick={() => skipVideo(-2)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+                                <SkipBack size={18} />
+                            </button>
+                            <button onClick={() => skipVideo(2)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+                                <SkipForward size={18} />
+                            </button>
+                            <button onClick={handleLike} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+                                <ThumbsUp size={18} fill={isLiked ? 'var(--text-primary)' : 'none'} /> {likesCount}
+                            </button>
+                            <button onClick={handleWatchLater} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: isWatchLater ? 'rgba(62, 166, 255, 0.1)' : 'var(--bg-hover)', color: isWatchLater ? '#3ea6ff' : 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+                                {isWatchLater ? <Check size={18} /> : <Clock size={18} />}
+                            </button>
+                            <button onClick={() => setShowShareModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+                                <Share2 size={18} />
+                            </button>
+                            <button onClick={() => setShowReportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '24px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+                                <Flag size={18} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {video.description && (
+                        <div style={{ background: 'var(--bg-secondary)', padding: '14px', borderRadius: '12px', fontSize: '14px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
+                            {video.description}
+                        </div>
+                    )}
+
                     <AISummaryPanel
                         videoTitle={video.title}
                         videoDescription={video.description}
                         channelName={video.user.username}
+                        videoUrl={video.video_url}
                     />
                 </div>
-            </div>
 
-            <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>{video.comments?.length || 0} Comments</h2>
-
-                <form onSubmit={handleComment} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-secondary)', flexShrink: 0, overflow: 'hidden' }}>
-                        {currentUser?.avatar_url ? (
-                            <img src={currentUser.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>
-                                {currentUser?.username?.charAt(0).toUpperCase() || <User size={20} />}
-                            </div>
-                        )}
+                {/* Comments Section */}
+                <div style={{ marginTop: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                        <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>{video.comments?.length || 0} {t('comments')}</h2>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '8px' }}>
-                        <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none', padding: '8px 0', fontSize: '15px' }} />
-                        {commentText && (
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                <button type="button" onClick={() => setCommentText('')} style={{ padding: '8px 16px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 'bold', borderRadius: '20px' }}>Cancel</button>
-                                <button type="submit" style={{ padding: '8px 16px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold' }}>Comment</button>
-                            </div>
-                        )}
-                    </div>
-                </form>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {video.comments?.map(comment => (
-                        <div key={comment.id} style={{ display: 'flex', gap: '16px' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
-                                {comment.user.avatar_url ? (
-                                    <img src={comment.user.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 'bold' }}>
-                                        {comment.user.username.charAt(0).toUpperCase()}
-                                    </div>
-                                )}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div style={{ display: 'flex', gap: '8px', alignItems: 'baseline' }}>
-                                    <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{comment.user.username}</span>
-                                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{new Date(comment.created_at).toLocaleDateString()}</span>
+                    <form onSubmit={handleComment} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '24px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-secondary)', flexShrink: 0, overflow: 'hidden' }}>
+                            {currentUser?.avatar_url ? (
+                                <img src={currentUser.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold' }}>
+                                    {currentUser?.username?.charAt(0).toUpperCase() || <User size={18} />}
                                 </div>
-                                <div style={{ fontSize: '15px' }}>{comment.content}</div>
-                            </div>
+                            )}
                         </div>
-                    ))}
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '8px' }}>
+                            <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none', padding: '8px 0', fontSize: '14px' }} />
+                            {commentText && (
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                    <button type="button" onClick={() => setCommentText('')} style={{ padding: '6px 14px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 'bold', borderRadius: '20px', fontSize: '13px' }}>Cancel</button>
+                                    <button type="submit" style={{ padding: '6px 14px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>Comment</button>
+                                </div>
+                            )}
+                        </div>
+                    </form>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {previewComments.map(renderComment)}
+                    </div>
+
+                    {hasMoreComments && (
+                        <button
+                            onClick={() => setShowCommentsModal(true)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '16px auto 0', padding: '10px 24px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '24px', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}
+                        >
+                            <MessageSquare size={16} /> Show all {video.comments.length} comments
+                        </button>
+                    )}
+                </div>
+
+                {/* Related Videos - shown here on mobile/tablet only */}
+                <div className="video-page-sidebar-mobile">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Related Videos</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {relatedVideos.slice(0, 8).map(v => (
+                            <VideoCard key={v.id} video={v} />
+                        ))}
+                    </div>
                 </div>
             </div>
+
+            {/* Right Column: Related Videos (desktop only) */}
+            {isSidebarVisible && (
+                <div className="video-page-sidebar">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Related Videos</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {relatedVideos.map(v => (
+                            <VideoCard key={v.id} video={v} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Comments Modal */}
+            {showCommentsModal && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={() => setShowCommentsModal(false)}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-secondary)', borderRadius: '16px', width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+                            <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>{video.comments.length} {t('comments')}</h2>
+                            <button onClick={() => setShowCommentsModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}>
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div style={{ overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {video.comments.map(renderComment)}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <ShareModal
                 isOpen={showShareModal}
@@ -308,8 +473,9 @@ export default function VideoPlayer() {
 
             <ReportModal
                 isOpen={showReportModal}
-                onClose={() => setShowReportModal(false)}
+                onClose={() => { setShowReportModal(false); setReportingCommentId(undefined); }}
                 videoId={video.id}
+                commentId={reportingCommentId}
             />
         </div>
     );

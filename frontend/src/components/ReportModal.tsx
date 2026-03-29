@@ -9,9 +9,10 @@ interface ReportModalProps {
     isOpen: boolean;
     onClose: () => void;
     videoId: string;
+    commentId?: string;
 }
 
-export default function ReportModal({ isOpen, onClose, videoId }: ReportModalProps) {
+export default function ReportModal({ isOpen, onClose, videoId, commentId }: ReportModalProps) {
     const [selectedReason, setSelectedReason] = useState('');
     const [reportSubmitted, setReportSubmitted] = useState(false);
     const { showToast } = useToast();
@@ -24,7 +25,7 @@ export default function ReportModal({ isOpen, onClose, videoId }: ReportModalPro
             return;
         }
         try {
-            await axios.post(`${API_BASE_URL}/reports/${videoId}`, { reason: selectedReason }, {
+            await axios.post(`${API_BASE_URL}/reports/${videoId}`, { reason: selectedReason, comment_id: commentId || null }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setReportSubmitted(true);
@@ -36,7 +37,7 @@ export default function ReportModal({ isOpen, onClose, videoId }: ReportModalPro
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={() => { onClose(); setReportSubmitted(false); setSelectedReason(''); }} title="Report Video">
+        <Modal isOpen={isOpen} onClose={() => { onClose(); setReportSubmitted(false); setSelectedReason(''); }} title={commentId ? "Report Comment" : "Report Video"}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {reportSubmitted ? (
                     <div style={{ textAlign: 'center', padding: '24px' }}>
@@ -48,7 +49,7 @@ export default function ReportModal({ isOpen, onClose, videoId }: ReportModalPro
                     </div>
                 ) : (
                     <>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Why are you reporting this video?</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Why are you reporting this {commentId ? 'comment' : 'video'}?</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {['Spam or misleading', 'Sexual content', 'Violent or repulsive content', 'Harassment or bullying', 'Harmful or dangerous acts', 'Copyright violation'].map(reason => (
                                 <label key={reason} style={{

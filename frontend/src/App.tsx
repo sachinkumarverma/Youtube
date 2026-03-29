@@ -12,6 +12,7 @@ import ChannelDetail from './pages/ChannelDetail';
 import Upload from './pages/Upload';
 import './index.css';
 import { ToastProvider } from './components/Toast';
+import OfflineBanner from './components/OfflineBanner';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
@@ -42,6 +43,7 @@ function App() {
 
   return (
     <ToastProvider>
+      <OfflineBanner />
       <Router>
         <div className="app-container">
           <Navbar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />

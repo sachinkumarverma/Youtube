@@ -37,16 +37,18 @@ app.get('/', (req, res) => {
 app.use(async (err, req, res, next) => {
   console.error('Error:', err.message || err);
   
-  // Log critical errors to audit trail
-  try {
-    const { query } = require('./lib/db');
-    await query(
-      'INSERT INTO audit_logs (action, entity_type, details) VALUES ($1, $2, $3)',
-      ['SYSTEM_ERROR', req.method + ' ' + req.path, JSON.stringify({ message: err.message, stack: err.stack })]
-    ).catch(e => console.error('Failed to log error to DB:', e.message));
-  } catch (logError) {}
-
   const status = err.status || 500;
+
+  // Only log real server errors (500s) to audit trail, not 4xx client errors
+  if (status >= 500) {
+    try {
+      const { query } = require('./lib/db');
+      await query(
+        'INSERT INTO audit_logs (action, entity_type, details) VALUES ($1, $2, $3)',
+        ['SYSTEM_ERROR', req.method + ' ' + req.path, JSON.stringify({ message: err.message })]
+      ).catch(e => console.error('Failed to log error to DB:', e.message));
+    } catch (logError) {}
+  }
   const message = err.message || 'Internal server error';
   res.status(status).json({ 
     error: message,
