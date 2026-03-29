@@ -38,13 +38,13 @@ const toggleLike = async (userId, videoId, type) => {
   if (existing) {
     if (existing.type === type) {
       await interactionRepo.deleteLike(existing.id);
-      return { removed: true };
+      return { liked: false };
     } else {
-      const updated = await interactionRepo.updateLike(existing.id, { type });
-      return updated;
+      await interactionRepo.updateLike(existing.id, { type });
+      return { liked: true };
     }
   } else {
-    const newLike = await interactionRepo.createLike({ user_id: userId, video_id: videoId, type });
+    await interactionRepo.createLike({ user_id: userId, video_id: videoId, type });
 
     // Notify video owner for new likes
     if (type === 'LIKE') {
@@ -61,7 +61,7 @@ const toggleLike = async (userId, videoId, type) => {
       }
     }
 
-    return newLike;
+    return { liked: true };
   }
 };
 

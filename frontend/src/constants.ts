@@ -1,5 +1,5 @@
 export const APP_NAME = 'ViewTube';
-export const API_BASE_URL = 'https://youtube-vi8f.onrender.com/api';
+export const API_BASE_URL = 'http://localhost:5000/api';
 
 export const CATEGORIES = ['Music', 'Gaming', 'Spiritual', 'Entertainment', 'Education', 'Vlogs'];
 

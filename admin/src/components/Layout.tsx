@@ -6,14 +6,14 @@ export default function Layout() {
     const navigate = useNavigate();
     const location = useLocation();
     const admin = JSON.parse(localStorage.getItem('admin_user') || '{}');
-    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 640);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-    // Lock body scroll on mobile when sidebar is open
+    // Lock body scroll on mobile/tablet when sidebar is open
     useEffect(() => {
-        const isMobile = window.innerWidth <= 640;
-        if (isMobile && isSidebarOpen) {
+        const isSmallScreen = window.innerWidth <= 1024;
+        if (isSmallScreen && isSidebarOpen) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
@@ -56,7 +56,7 @@ export default function Layout() {
             </header>
 
             <div className="admin-body">
-                {isSidebarOpen && window.innerWidth <= 640 && (
+                {isSidebarOpen && window.innerWidth <= 1024 && (
                     <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
                 )}
                 <aside className={`sidebar ${isSidebarOpen ? '' : 'collapsed'}`}>
@@ -64,7 +64,7 @@ export default function Layout() {
                         <button
                             key={l.path}
                             className={`sidebar-link ${location.pathname === l.path ? 'active' : ''}`}
-                            onClick={() => { navigate(l.path); if (window.innerWidth <= 640) setIsSidebarOpen(false); }}
+                            onClick={() => { navigate(l.path); if (window.innerWidth <= 1024) setIsSidebarOpen(false); }}
                         >
                             <l.icon size={22} />
                             <span className="sidebar-text">{l.label}</span>
@@ -80,7 +80,7 @@ export default function Layout() {
                         <button
                             key={l.path}
                             className={`sidebar-link ${location.pathname === l.path ? 'active' : ''}`}
-                            onClick={() => { navigate(l.path); if (window.innerWidth <= 640) setIsSidebarOpen(false); }}
+                            onClick={() => { navigate(l.path); if (window.innerWidth <= 1024) setIsSidebarOpen(false); }}
                         >
                             <l.icon size={22} />
                             <span className="sidebar-text">{l.label}</span>

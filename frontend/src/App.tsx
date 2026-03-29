@@ -16,15 +16,15 @@ import { ToastProvider } from './components/Toast';
 import OfflineBanner from './components/OfflineBanner';
 
 function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
 
-  // Lock body scroll on mobile when sidebar is open
+  // Lock body scroll on mobile/tablet when sidebar is open
   useEffect(() => {
     const handleResize = () => {
-      const isMobile = window.innerWidth <= 768;
-      if (isMobile && isSidebarOpen) {
+      const isSmallScreen = window.innerWidth <= 1024;
+      if (isSmallScreen && isSidebarOpen) {
         document.body.style.overflow = 'hidden';
         document.documentElement.style.overflow = 'hidden';
       } else {
@@ -52,8 +52,8 @@ function App() {
             {isSidebarOpen && (
               <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
             )}
-            <Sidebar isOpen={isSidebarOpen} />
-            <main className="page-content" onClick={() => window.innerWidth <= 768 && isSidebarOpen && setIsSidebarOpen(false)}>
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+            <main className="page-content" onClick={() => window.innerWidth <= 1024 && isSidebarOpen && setIsSidebarOpen(false)}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
