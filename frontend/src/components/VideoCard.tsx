@@ -72,30 +72,27 @@ export default function VideoCard({ video, isOwner, onEdit, onDelete }: VideoCar
                     </Link>
                 )}
 
-                <div className="video-details" style={{ flex: 1, minWidth: 0, gap: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                        <Link to={`/video/${video.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, minWidth: 0 }}>
-                            <h3 className="video-title" style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', lineBreak: 'anywhere' }}>{video.title}</h3>
-                        </Link>
-
-                        <div style={{ flexShrink: 0 }}>
-                            <VideoMenu
-                                videoId={video.id}
-                                videoTitle={video.title}
-                                isOwner={isVideoOwner}
-                                onEdit={onEdit}
-                                onDelete={onDelete}
-                            />
-                        </div>
-                    </div>
+                <div className="video-details" style={{ flex: 1, minWidth: 0, paddingRight: '30px' }}>
+                    <Link to={`/video/${video.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block', minWidth: 0 }}>
+                        <h3 className="video-title" style={{ margin: 0 }}>{video.title}</h3>
+                    </Link>
 
                     {!hideChannelInfo && video.user && (
-                        <Link to={`/channel/${video.user_id}`} className="channel-name" style={{ textDecoration: 'none', color: 'var(--text-secondary)', display: 'block', fontSize: '14px', marginTop: '0' }}>{video.user.username}</Link>
+                        <Link to={`/channel/${video.user_id}`} className="channel-name" style={{ textDecoration: 'none', color: 'var(--text-secondary)', display: 'block', fontSize: '14px' }}>{video.user.username}</Link>
                     )}
-
-                    <span className="video-stats" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '0', display: 'block' }}>
+                    <span className="video-stats" style={{ fontSize: '13px', color: 'var(--text-secondary)', display: 'block' }}>
                         {formatViews(video.views)} {t('views')} • {getDaysAgo(video.created_at)}
                     </span>
+                </div>
+
+                <div style={{ position: 'absolute', top: '12px', right: 0 }}>
+                    <VideoMenu
+                        videoId={video.id}
+                        videoTitle={video.title}
+                        isOwner={isVideoOwner}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                    />
                 </div>
             </div>
         </div>

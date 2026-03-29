@@ -286,7 +286,7 @@ export default function VideoPlayer() {
     );
 
     return (
-        <div className={`video-page-layout ${!isSidebarVisible ? 'sidebar-hidden' : ''}`} style={{ position: 'relative' }}>
+        <div className={`video-page-layout ${!isSidebarVisible ? 'sidebar-hidden' : ''}`}>
             {/* Sidebar Toggle Button (Desktop only) */}
             <div className="sidebar-toggle-container">
                 <button
@@ -295,19 +295,18 @@ export default function VideoPlayer() {
                         background: 'var(--bg-secondary)',
                         border: '1px solid var(--border)',
                         color: 'var(--text-primary)',
-                        padding: '10px',
-                        borderRadius: '50%',
+                        padding: '8px',
+                        borderRadius: '8px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         transition: 'all 0.2s',
-                        boxShadow: 'var(--shadow)',
-                        zIndex: 10
+                        boxShadow: 'var(--shadow)'
                     }}
                     title={isSidebarVisible ? "Hide side panel" : "Show side panel"}
                 >
-                    {isSidebarVisible ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
+                    {isSidebarVisible ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
                 </button>
             </div>
 
