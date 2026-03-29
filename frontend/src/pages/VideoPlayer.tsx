@@ -49,6 +49,7 @@ export default function VideoPlayer() {
     const [commentMenuId, setCommentMenuId] = useState<string | null>(null);
     const [reportingCommentId, setReportingCommentId] = useState<string | undefined>(undefined);
     const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const { t } = useTranslation();
     const { showToast } = useToast();
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -369,11 +370,21 @@ export default function VideoPlayer() {
                         </div>
                     </div>
 
-                    {video.description && (
-                        <div style={{ background: 'var(--bg-secondary)', padding: '14px', borderRadius: '12px', fontSize: '14px', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
-                            {video.description}
+                    <div
+                        className="video-description-box"
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                    >
+                        <div className="video-description-header">
+                            <span>{video.views.toLocaleString()} {t('views')}</span>
+                            <span>{new Date(video.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                         </div>
-                    )}
+                        <div className={`video-description-content ${!isDescriptionExpanded ? 'collapsed' : ''}`}>
+                            {video.description || 'No description provided.'}
+                        </div>
+                        <button className="show-more-btn">
+                            {isDescriptionExpanded ? 'Show less' : '...more'}
+                        </button>
+                    </div>
 
                     <AISummaryPanel
                         videoTitle={video.title}

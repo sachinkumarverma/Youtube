@@ -42,8 +42,8 @@ export default function Subscriptions() {
     };
 
     return (
-        <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-            <h1 style={{ fontSize: '24px', marginBottom: '32px', fontWeight: 'bold' }}>{t('subscriptions')}</h1>
+        <div className="subscriptions-page">
+            <h1 className="subscriptions-title">{t('subscriptions')}</h1>
 
             {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -56,19 +56,9 @@ export default function Subscriptions() {
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {subscriptions.map(sub => (
-                        <div key={sub.id} style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '12px 16px',
-                            background: 'var(--bg-secondary)',
-                            borderRadius: '12px',
-                            border: '1px solid var(--border)',
-                            transition: 'transform 0.2s',
-                            cursor: 'pointer'
-                        }} className="hover-bg">
-                            <Link to={`/channel/${sub.channel.id}`} style={{ display: 'flex', alignItems: 'center', gap: '20px', textDecoration: 'none', color: 'inherit', flex: 1 }}>
-                                <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-primary)' }}>
+                        <div key={sub.id} className="subscription-card hover-bg">
+                            <Link to={`/channel/${sub.channel.id}`} className="subscription-card-link">
+                                <div className="subscription-avatar">
                                     {sub.channel.avatar_url ? (
                                         <img src={sub.channel.avatar_url} alt="Channel" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
@@ -77,37 +67,23 @@ export default function Subscriptions() {
                                         </div>
                                     )}
                                 </div>
-                                <div>
-                                    <div style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div className="subscription-info">
+                                    <div className="subscription-username">
                                         {sub.channel.username} <CheckCircle2 size={16} color="var(--text-secondary)" />
                                     </div>
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
+                                    <div className="subscription-meta">
                                         @{sub.channel.username.toLowerCase().replace(' ', '')} • {sub.channel._count?.subscribers || 0} {t('subscribers')}
                                     </div>
                                 </div>
                             </Link>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <button
-                                    onClick={() => toggleNotifications(sub.channel.id)}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        padding: '8px 16px',
-                                        borderRadius: '20px',
-                                        background: 'var(--bg-hover)',
-                                        border: 'none',
-                                        color: 'var(--text-primary)',
-                                        cursor: 'pointer',
-                                        fontWeight: '600'
-                                    }}
-                                >
-                                    {sub.notifications_on ? <Bell size={18} /> : <BellOff size={18} color="var(--text-secondary)" />}
-                                    {t('notifications')}
-                                </button>
-                            </div>
-
+                            <button
+                                onClick={() => toggleNotifications(sub.channel.id)}
+                                className="subscription-notify-btn"
+                            >
+                                {sub.notifications_on ? <Bell size={18} /> : <BellOff size={18} color="var(--text-secondary)" />}
+                                <span className="subscription-notify-text">{t('notifications')}</span>
+                            </button>
                         </div>
                     ))}
                 </div>
