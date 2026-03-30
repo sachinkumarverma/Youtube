@@ -116,7 +116,7 @@ export default function Analytics() {
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                         <XAxis dataKey="date" tickFormatter={formatDate} stroke="var(--text-secondary)" fontSize={11} tick={{ fill: 'var(--text-secondary)' }} interval={Math.max(0, Math.floor(data.length / 6))} />
                         <YAxis stroke="var(--text-secondary)" fontSize={11} tick={{ fill: 'var(--text-secondary)' }} allowDecimals={false} />
-                        <Tooltip contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '13px', color: 'var(--text-primary)' }} labelFormatter={formatDate} />
+                        <Tooltip contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '13px', color: 'var(--text-primary)' }} labelFormatter={(val: any) => formatDate(String(val))} />
                         <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fill={`url(#${gradientId})`} />
                     </AreaChart>
                 </ResponsiveContainer>
