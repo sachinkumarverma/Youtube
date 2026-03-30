@@ -73,7 +73,22 @@ export const TRANSLATIONS = {
         noNotifications: 'No notifications',
         editVideo: 'Edit Video',
         deleteVideo: 'Delete Video',
-        saveWatchLater: 'Save to Watch Later'
+        saveWatchLater: 'Save to Watch Later',
+        analytics: 'Analytics',
+        totalViews: 'Total Views',
+        totalLikes: 'Total Likes',
+        totalVideos: 'Total Videos',
+        topVideos: 'Top Videos',
+        last28Days: 'Last 28 days',
+        last90Days: 'Last 90 days',
+        lastYear: 'Last year',
+        subscriberGrowth: 'Subscriber Growth',
+        viewsOverTime: 'Views Over Time',
+        likesOverTime: 'Likes Over Time',
+        commentsOverTime: 'Comments Over Time',
+        watchHours: 'Watch Hours',
+        avgViews: 'Avg Views/Video',
+        engagement: 'Engagement'
     },
     hi: {
         home: 'होम',
@@ -144,6 +159,21 @@ export const TRANSLATIONS = {
         noNotifications: 'कोई नोटिफिकेशन नहीं',
         editVideo: 'वीडियो संपादित करें',
         deleteVideo: 'वीडियो हटाएं',
-        saveWatchLater: 'बाद में देखने के लिए सेव करें'
+        saveWatchLater: 'बाद में देखने के लिए सेव करें',
+        analytics: 'एनालिटिक्स',
+        totalViews: 'कुल व्यूज',
+        totalLikes: 'कुल लाइक्स',
+        totalVideos: 'कुल वीडियो',
+        topVideos: 'टॉप वीडियो',
+        last28Days: 'पिछले 28 दिन',
+        last90Days: 'पिछले 90 दिन',
+        lastYear: 'पिछला साल',
+        subscriberGrowth: 'सब्सक्राइबर ग्रोथ',
+        viewsOverTime: 'समय के साथ व्यूज',
+        likesOverTime: 'समय के साथ लाइक्स',
+        commentsOverTime: 'समय के साथ टिप्पणियां',
+        watchHours: 'वॉच आवर्स',
+        avgViews: 'औसत व्यूज/वीडियो',
+        engagement: 'एंगेजमेंट'
     }
 };

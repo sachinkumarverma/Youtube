@@ -1,4 +1,4 @@
-import { Home, Compass, PlaySquare, Clock, ThumbsUp, History, Flame, Gamepad2, UserSquare } from 'lucide-react';
+import { Home, Compass, PlaySquare, Clock, ThumbsUp, History, Flame, Gamepad2, UserSquare, BarChart3 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 
@@ -60,6 +60,10 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) 
           <Link to={`/channel/${user.id}`} className={`sidebar-link ${isActive(`/channel/${user.id}`) ? 'active' : ''}`} onClick={handleLinkClick}>
             <UserSquare size={22} />
             <span className="sidebar-text">{t('yourChannel')}</span>
+          </Link>
+          <Link to="/analytics" className={`sidebar-link ${isActive('/analytics') ? 'active' : ''}`} onClick={handleLinkClick}>
+            <BarChart3 size={22} />
+            <span className="sidebar-text">{t('analytics')}</span>
           </Link>
         </>
       )}

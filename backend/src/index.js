@@ -12,6 +12,7 @@ const userRoutes = require('./features/user/user.routes');
 const notificationRoutes = require('./features/notifications/notification.routes');
 const reportRoutes = require('./features/reports/report.routes');
 const adminRoutes = require('./features/admin/admin.routes');
+const analyticsRoutes = require('./features/analytics/analytics.routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +30,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.get('/', (req, res) => {
   res.send('YouTube Clone API is running!');

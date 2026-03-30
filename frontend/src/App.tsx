@@ -11,6 +11,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import Subscriptions from './pages/Subscriptions';
 import ChannelDetail from './pages/ChannelDetail';
 import Upload from './pages/Upload';
+import Analytics from './pages/Analytics';
 import './index.css';
 import { ToastProvider } from './components/Toast';
 import OfflineBanner from './components/OfflineBanner';
@@ -66,6 +67,7 @@ function App() {
                 <Route path="/subscriptions" element={<Subscriptions />} />
                 <Route path="/channel/:id" element={<ChannelDetail />} />
                 <Route path="/upload" element={<Upload />} />
+                <Route path="/analytics" element={<Analytics />} />
 
                 <Route path="/history" element={<VideoList endpoint="user/history" title="History" />} />
                 <Route path="/watch-later" element={<VideoList endpoint="user/watch-later" title="Watch Later" />} />

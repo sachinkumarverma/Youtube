@@ -141,6 +141,7 @@ const remove = async (id) => {
 
 const incrementViews = async (id) => {
   await query('UPDATE videos SET views = views + 1 WHERE id = $1', [id]);
+  await query('INSERT INTO video_view_logs (id, video_id) VALUES ($1, $2)', [generateId(), id]);
   return { success: true };
 };
 
