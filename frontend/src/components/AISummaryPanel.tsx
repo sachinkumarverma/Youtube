@@ -1,17 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, ChevronDown, ChevronUp, Loader2, AlertCircle, Camera, FileText } from 'lucide-react';
 
-declare global {
-    interface Window {
-        puter: {
-            ai: {
-                chat: (messages: any, options?: { model?: string }) => Promise<any>;
-                txt2img: (prompt: string, options?: { model?: string }) => Promise<HTMLImageElement>;
-            };
-        };
-    }
-}
-
 interface AISummaryPanelProps {
     videoTitle: string;
     videoDescription: string;

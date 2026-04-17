@@ -1,16 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Wand2, Loader2, Download, AlertCircle, ChevronDown, Image } from 'lucide-react';
 
-declare global {
-    interface Window {
-        puter: {
-            ai: {
-                txt2img: (prompt: string, options?: { model?: string }) => Promise<HTMLImageElement>;
-            };
-        };
-    }
-}
-
 interface AIThumbnailGeneratorProps {
     videoTitle: string;
     videoCategory: string;
