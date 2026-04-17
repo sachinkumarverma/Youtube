@@ -119,7 +119,7 @@ export default function Logs() {
                                 </div>
                             )}
                         </div>
-                        <button className="btn btn-ghost btn-sm" onClick={() => fetchLogs(meta.page)} title="Refresh">
+                        <button className="btn btn-ghost btn-sm" onClick={() => { cacheRef.current = {}; fetchLogs(meta.page); }} title="Refresh">
                             <RefreshCw size={16} className={loading ? 'spin' : ''} /> <span className="hide-mobile">Refresh</span>
                         </button>
                     </div>

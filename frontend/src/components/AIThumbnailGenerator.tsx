@@ -1,5 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Wand2, Loader2, Download, AlertCircle, ChevronDown, Image } from 'lucide-react';
+
+declare global {
+    interface Window {
+        puter: {
+            ai: {
+                txt2img: (prompt: string, options?: { model?: string }) => Promise<HTMLImageElement>;
+            };
+        };
+    }
+}
 
 interface AIThumbnailGeneratorProps {
     videoTitle: string;
@@ -23,6 +33,41 @@ const STYLE_PROMPTS: Record<string, string> = {
     'dark-theme': 'dark dramatic background, glowing neon accents, moody atmosphere, professional thumbnail',
 };
 
+const AI_MODEL = 'black-forest-labs/FLUX.1-schnell';
+
+function loadPuterScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        if (window.puter) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://js.puter.com/v2/';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Puter.js'));
+        document.head.appendChild(script);
+    });
+}
+
+function imageElementToBlob(img: HTMLImageElement): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas context failed'));
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, 1280, 720);
+        ctx.drawImage(img, 0, 0, 1280, 720);
+
+        canvas.toBlob((b) => {
+            if (b) resolve(b);
+            else reject(new Error('Failed to create image blob'));
+        }, 'image/png');
+    });
+}
+
 export default function AIThumbnailGenerator({ videoTitle, videoCategory, onSelectThumbnail }: AIThumbnailGeneratorProps) {
     const [expanded, setExpanded] = useState(false);
     const [style, setStyle] = useState('cinematic');
@@ -31,115 +76,33 @@ export default function AIThumbnailGenerator({ videoTitle, videoCategory, onSele
     const [generatedImages, setGeneratedImages] = useState<{ url: string; blob: Blob }[]>([]);
     const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
     const [error, setError] = useState('');
+    const [puterReady, setPuterReady] = useState(false);
+
+    useEffect(() => {
+        loadPuterScript()
+            .then(() => setPuterReady(true))
+            .catch(() => setError('Failed to load AI image service.'));
+    }, []);
 
     const buildPrompt = (variant: number) => {
         const base = customPrompt.trim() || `YouTube thumbnail for a video titled "${videoTitle}" in ${videoCategory} category`;
         const styleDesc = STYLE_PROMPTS[style] || '';
-        return `Create a beautiful, modern, aesthetic SVG vector art for a YouTube thumbnail.
-Video Title: "${videoTitle}"
-Base Description: ${base}
-Style: ${styleDesc} (Variant ${variant + 1})
-
-RULES:
-- You MUST ONLY return raw, perfectly valid SVG code (XML).
-- Stop and start output strictly with <svg> and </svg>.
-- The viewBox MUST be "0 0 1280 720" and dimensions width="1280" height="720".
-- Make extremely rich use of <defs><linearGradient>, geometric layered paths, filters, and dynamic layout.
-- Put large, beautifully styled typography (the video title) directly into the SVG to make it pop like a real YouTube thumbnail. Use standard web fonts (font-family="Impact, sans-serif" or similar).
-- NO conversational text. Only the <svg> block!`;
+        return `${base}, ${styleDesc}, YouTube thumbnail, high quality, professional, variation ${variant + 1}`;
     };
 
-    const generateWithGemini = async (prompt: string): Promise<{ url: string; blob: Blob }> => {
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-            throw new Error('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
-        }
-
-        // Use gemini-2.0-flash (non-thinking model) to generate SVG graphics
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        temperature: 0.9,
-                        maxOutputTokens: 8192
-                    }
-                })
-            }
-        );
-
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err?.error?.message || `API error ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Gemini thinking models return multiple parts (thought + response).
-        // Concatenate all text parts to ensure we capture the SVG output.
-        const allParts = data.candidates?.[0]?.content?.parts || [];
-        const rawText = allParts
-            .filter((p: any) => p.text && !p.thought)
-            .map((p: any) => p.text)
-            .join('\n');
-
-        // Strip markdown code fences if present (```svg ... ``` or ```xml ... ```)
-        const cleaned = rawText.replace(/```(?:svg|xml|html)?\s*/gi, '').replace(/```/g, '');
-
-        // Extract strictly the SVG part
-        const svgMatch = cleaned.match(/<svg[\s\S]*<\/svg>/i);
-        if (!svgMatch) {
-            throw new Error('Failed to generate SVG graphic. Model output an invalid format.');
-        }
-
-        const svgCode = svgMatch[0];
-
-        // Convert SVG to Canvas to get a PNG without external image APIs!
-        const blob = await new Promise<Blob>((resolve, reject) => {
-            const svgBlob = new Blob([svgCode], { type: 'image/svg+xml;charset=utf-8' });
-            const url = URL.createObjectURL(svgBlob);
-            const img = new window.Image();
-            img.crossOrigin = "anonymous";
-
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = 1280;
-                canvas.height = 720;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return reject(new Error('Canvas context failed'));
-
-                // Solid black background to prevent transparent artifacts
-                ctx.fillStyle = '#0f172a';
-                ctx.fillRect(0, 0, 1280, 720);
-
-                ctx.drawImage(img, 0, 0);
-                canvas.toBlob((b) => {
-                    URL.revokeObjectURL(url);
-                    if (b) resolve(b);
-                    else reject(new Error('Failed to create Image Blob'));
-                }, 'image/png');
-            };
-
-            img.onerror = () => {
-                URL.revokeObjectURL(url);
-                reject(new Error('Invalid SVG syntax rendered by AI'));
-            };
-            img.src = url;
-        });
-
-        return { url: URL.createObjectURL(blob), blob };
+    const generateImage = async (prompt: string): Promise<{ url: string; blob: Blob }> => {
+        const imgElement = await window.puter.ai.txt2img(prompt, { model: AI_MODEL });
+        const blob = await imageElementToBlob(imgElement);
+        const url = URL.createObjectURL(blob);
+        return { url, blob };
     };
 
     const generate = async (e?: React.MouseEvent) => {
         e?.preventDefault();
         e?.stopPropagation();
 
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-            setError('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
+        if (!puterReady) {
+            setError('AI service is still loading. Please try again.');
             return;
         }
 
@@ -149,11 +112,12 @@ RULES:
         setGeneratedImages([]);
 
         try {
-            // Generate 3 variants in parallel
-            const results = await Promise.all([0, 1, 2].map(i => generateWithGemini(buildPrompt(i))));
+            const results = await Promise.all(
+                [0, 1, 2].map(i => generateImage(buildPrompt(i)))
+            );
             setGeneratedImages(results);
         } catch (err: any) {
-            setError(err.message || 'Failed to generate thumbnails. Check your Gemini API key.');
+            setError(err.message || 'Failed to generate thumbnails. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -200,7 +164,7 @@ RULES:
                             marginLeft: '8px', fontSize: '11px', fontWeight: '600',
                             background: 'linear-gradient(90deg, #f59e0b, #ef4444)',
                             padding: '2px 8px', borderRadius: '20px', color: 'white'
-                        }}>Powered by Gemini</span>
+                        }}>Free &bull; Unlimited</span>
                     </div>
                 </div>
                 <ChevronDown size={18} color="var(--text-secondary)" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />

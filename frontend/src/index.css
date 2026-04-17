@@ -957,10 +957,6 @@ body {
     touch-action: none;
   }
 
-  /* Hide Gemini badge on mobile */
-  .gemini-badge {
-    display: none !important;
-  }
 
   /* Video page stacks on mobile */
   .video-page-layout {

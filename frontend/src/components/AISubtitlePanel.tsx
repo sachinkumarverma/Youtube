@@ -27,27 +27,36 @@ export default function AISubtitlePanel() {
     const translateTimeoutRef = useRef<any>(null);
 
     const translateText = useCallback(async (text: string, to: string) => {
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE' || to === 'en') return;
-        if (!text.trim()) return;
+        if (to === 'en' || !text.trim()) return;
 
         setIsTranslating(true);
         try {
+            // Load Puter.js if not already loaded
+            if (!(window as any).puter) {
+                await new Promise<void>((resolve, reject) => {
+                    if (document.querySelector('script[src="https://js.puter.com/v2/"]')) {
+                        const check = setInterval(() => {
+                            if ((window as any).puter) { clearInterval(check); resolve(); }
+                        }, 100);
+                        setTimeout(() => { clearInterval(check); reject(new Error('timeout')); }, 10000);
+                        return;
+                    }
+                    const script = document.createElement('script');
+                    script.src = 'https://js.puter.com/v2/';
+                    script.onload = () => resolve();
+                    script.onerror = () => reject(new Error('Failed to load Puter.js'));
+                    document.head.appendChild(script);
+                });
+            }
+
             const langLabel = LANGUAGES.find(l => l.translateTo === to)?.label || to;
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `Translate this to ${langLabel}. Only return the translated text, nothing else: "${text}"` }] }],
-                        generationConfig: { temperature: 0.1, maxOutputTokens: 200 }
-                    })
-                }
+            const response = await (window as any).puter.ai.chat(
+                `Translate this to ${langLabel}. Only return the translated text, nothing else: "${text}"`,
+                { model: 'gpt-4o-mini' }
             );
-            if (!response.ok) return;
-            const data = await response.json();
-            const translated = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            const translated = typeof response === 'string'
+                ? response.trim()
+                : (response?.message?.content || response?.text || '').trim();
             if (translated) setTranslatedSubtitle(translated);
         } catch (e) {
             console.error('Translation error:', e);

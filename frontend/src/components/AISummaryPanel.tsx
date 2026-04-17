@@ -1,5 +1,16 @@
-import { useState } from 'react';
-import { Sparkles, ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Sparkles, ChevronDown, ChevronUp, Loader2, AlertCircle, Camera, FileText } from 'lucide-react';
+
+declare global {
+    interface Window {
+        puter: {
+            ai: {
+                chat: (messages: any, options?: { model?: string }) => Promise<any>;
+                txt2img: (prompt: string, options?: { model?: string }) => Promise<HTMLImageElement>;
+            };
+        };
+    }
+}
 
 interface AISummaryPanelProps {
     videoTitle: string;
@@ -11,7 +22,7 @@ interface AISummaryPanelProps {
 }
 
 // Capture frames from the video at evenly spaced intervals
-function captureFrames(videoUrl: string, count = 4): Promise<string[]> {
+function captureFrames(videoUrl: string, count = 6): Promise<string[]> {
     return new Promise((resolve, reject) => {
         const video = document.createElement('video');
         video.crossOrigin = 'anonymous';
@@ -32,7 +43,6 @@ function captureFrames(videoUrl: string, count = 4): Promise<string[]> {
             const frames: string[] = [];
             let idx = 0;
 
-            // Pick evenly spaced timestamps (skip first/last 5%)
             const startOffset = duration * 0.05;
             const endOffset = duration * 0.95;
             const step = (endOffset - startOffset) / (count - 1);
@@ -49,7 +59,6 @@ function captureFrames(videoUrl: string, count = 4): Promise<string[]> {
 
             video.onseeked = () => {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                // Get base64 data (strip the data:image/jpeg;base64, prefix)
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 frames.push(dataUrl.split(',')[1]);
                 idx++;
@@ -60,11 +69,90 @@ function captureFrames(videoUrl: string, count = 4): Promise<string[]> {
         };
 
         video.onerror = () => reject(new Error('Failed to load video for frame capture'));
-
-        // Timeout after 15 seconds
-        setTimeout(() => reject(new Error('Video frame capture timed out')), 15000);
-
+        setTimeout(() => reject(new Error('Video frame capture timed out')), 20000);
         video.src = videoUrl;
+    });
+}
+
+// Fallback: capture a single frame using fetch + blob URL (bypasses some CORS issues)
+async function captureFrameViaFetch(videoUrl: string, count = 6): Promise<string[]> {
+    const response = await fetch(videoUrl);
+    if (!response.ok) throw new Error('Failed to fetch video');
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    try {
+        return await new Promise((resolve, reject) => {
+            const video = document.createElement('video');
+            video.muted = true;
+            video.preload = 'auto';
+
+            video.onloadedmetadata = () => {
+                const duration = video.duration;
+                if (!duration || duration < 1) {
+                    reject(new Error('Video too short'));
+                    return;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 640;
+                canvas.height = 360;
+                const ctx = canvas.getContext('2d')!;
+                const frames: string[] = [];
+                let idx = 0;
+
+                const startOffset = duration * 0.05;
+                const endOffset = duration * 0.95;
+                const step = (endOffset - startOffset) / (count - 1);
+                const timestamps = Array.from({ length: count }, (_, i) => startOffset + step * i);
+
+                const seekAndCapture = () => {
+                    if (idx >= timestamps.length) {
+                        video.src = '';
+                        resolve(frames);
+                        return;
+                    }
+                    video.currentTime = timestamps[idx];
+                };
+
+                video.onseeked = () => {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    frames.push(dataUrl.split(',')[1]);
+                    idx++;
+                    seekAndCapture();
+                };
+
+                seekAndCapture();
+            };
+
+            video.onerror = () => reject(new Error('Blob video load failed'));
+            setTimeout(() => reject(new Error('Blob frame capture timed out')), 20000);
+            video.src = blobUrl;
+        });
+    } finally {
+        URL.revokeObjectURL(blobUrl);
+    }
+}
+
+function loadPuterScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        if (window.puter) {
+            resolve();
+            return;
+        }
+        if (document.querySelector('script[src="https://js.puter.com/v2/"]')) {
+            const check = setInterval(() => {
+                if (window.puter) { clearInterval(check); resolve(); }
+            }, 100);
+            setTimeout(() => { clearInterval(check); reject(new Error('Puter.js load timeout')); }, 10000);
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://js.puter.com/v2/';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Puter.js'));
+        document.head.appendChild(script);
     });
 }
 
@@ -81,11 +169,18 @@ export default function AISummaryPanel({
     const [error, setError] = useState('');
     const [expanded, setExpanded] = useState(false);
     const [generated, setGenerated] = useState(false);
+    const [puterReady, setPuterReady] = useState(false);
+    const [mode, setMode] = useState<'video' | 'metadata' | null>(null);
+
+    useEffect(() => {
+        loadPuterScript()
+            .then(() => setPuterReady(true))
+            .catch(() => setError('Failed to load AI service.'));
+    }, []);
 
     const generateSummary = async () => {
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-            setError('Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.');
+        if (!puterReady) {
+            setError('AI service is still loading. Please try again.');
             setExpanded(true);
             return;
         }
@@ -93,27 +188,41 @@ export default function AISummaryPanel({
         setLoading(true);
         setError('');
         setExpanded(true);
+        setMode(null);
 
         try {
-            // Try to capture frames from the video for visual analysis
-            let frameParts: any[] = [];
+            // Try to capture frames from the video for real visual analysis
+            let frameContents: any[] = [];
             if (videoUrl) {
+                // Method 1: direct crossOrigin load
                 try {
-                    const frames = await captureFrames(videoUrl, 4);
-                    frameParts = frames.map(base64 => ({
-                        inlineData: {
-                            mimeType: 'image/jpeg',
-                            data: base64
-                        }
+                    const frames = await captureFrames(videoUrl, 6);
+                    frameContents = frames.map(base64 => ({
+                        type: 'image_url' as const,
+                        image_url: { url: `data:image/jpeg;base64,${base64}` }
                     }));
-                } catch {
-                    // If frame capture fails (CORS, etc.), fall back to text-only
-                    console.warn('Frame capture failed, using text-only summary');
+                } catch (e1) {
+                    console.warn('Direct frame capture failed, trying fetch method...', e1);
+                    // Method 2: fetch video as blob first (avoids CORS on canvas)
+                    try {
+                        const frames = await captureFrameViaFetch(videoUrl, 6);
+                        frameContents = frames.map(base64 => ({
+                            type: 'image_url' as const,
+                            image_url: { url: `data:image/jpeg;base64,${base64}` }
+                        }));
+                    } catch (e2) {
+                        console.warn('Fetch frame capture also failed:', e2);
+                    }
                 }
             }
 
-            const textPrompt = frameParts.length > 0
-                ? `You are analyzing a YouTube video. Here are ${frameParts.length} frames captured from the video at different timestamps.
+            const hasFrames = frameContents.length > 0;
+            setMode(hasFrames ? 'video' : 'metadata');
+
+            let textPrompt: string;
+
+            if (hasFrames) {
+                textPrompt = `You are analyzing a YouTube video by looking at ${frameContents.length} frames captured at different timestamps throughout the video.
 
 Video Title: "${videoTitle}"
 Channel: "${channelName || 'Unknown'}"
@@ -121,8 +230,13 @@ Category: "${videoCategory || 'General'}"
 Duration: "${videoDuration || 'Unknown'}"
 Description: "${videoDescription || 'No description provided.'}"
 
-Based on the visual content in these frames AND the metadata, provide a concise, engaging 3-5 sentence summary of what this video is about. Describe what you actually see happening in the frames — the setting, people, actions, text overlays, visuals. Write in a friendly, informative tone. Do not say "based on the frames" or "it appears" — just summarize directly as if you watched it.`
-                : `You are a helpful assistant that summarizes YouTube videos based on their metadata.
+IMPORTANT INSTRUCTIONS:
+- Carefully examine EVERY frame. Describe what you ACTUALLY SEE: the scenes, people, objects, actions, environments, text on screen, colors, UI elements.
+- Your summary must be grounded in the visual evidence from the frames. Do NOT make up content that isn't visible.
+- Write a detailed 4-6 sentence summary describing the actual video content based on what the frames show.
+- Be specific — mention concrete details you observe, not generic descriptions.`;
+            } else {
+                textPrompt = `Based ONLY on the following metadata, write a brief overview of this YouTube video. Be honest that this is based on the title and description — do NOT invent or assume specific content, scenes, or details that aren't mentioned.
 
 Video Title: "${videoTitle}"
 Channel: "${channelName || 'Unknown'}"
@@ -130,36 +244,23 @@ Category: "${videoCategory || 'General'}"
 Duration: "${videoDuration || 'Unknown'}"
 Description: "${videoDescription || 'No description provided.'}"
 
-Please provide a concise, engaging 3-4 sentence summary of what this video is likely about. Mention the key topics, what the viewer will learn or experience, and who it's best suited for. Write in a friendly, informative tone. Do not say "this video is likely about" — just summarize directly as if you know the content.`;
+Write 2-3 sentences. Only state what can be inferred from the metadata above. If the description is empty or vague, say so rather than guessing.`;
+            }
 
-            const parts = [
-                ...frameParts,
-                { text: textPrompt }
+            const messageContent = [
+                ...frameContents,
+                { type: 'text' as const, text: textPrompt }
             ];
 
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts }],
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
-                    })
-                }
+            const response = await window.puter.ai.chat(
+                [{ role: 'user', content: messageContent }],
+                { model: hasFrames ? 'gpt-4o' : 'gpt-4o-mini' }
             );
 
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error?.message || 'Gemini API request failed');
-            }
+            const text = typeof response === 'string'
+                ? response
+                : response?.message?.content || response?.text || '';
 
-            const data = await response.json();
-            const allParts = data.candidates?.[0]?.content?.parts || [];
-            const text = allParts
-                .filter((p: any) => p.text)
-                .map((p: any) => p.text)
-                .join('\n');
             if (!text) throw new Error('No summary generated');
             setSummary(text.trim());
             setGenerated(true);
@@ -197,11 +298,11 @@ Please provide a concise, engaging 3-4 sentence summary of what this video is li
                         <Sparkles size={14} color="white" />
                     </div>
                     <span style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)' }}>AI Summary</span>
-                    <span className="gemini-badge" style={{
+                    <span style={{
                         fontSize: '10px', fontWeight: '600',
                         background: 'linear-gradient(90deg, #6366f1, #a855f7)',
                         padding: '2px 6px', borderRadius: '20px', color: 'white', whiteSpace: 'nowrap'
-                    }}>Powered by Gemini</span>
+                    }}>Free &bull; Unlimited</span>
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -238,7 +339,7 @@ Please provide a concise, engaging 3-4 sentence summary of what this video is li
                     {loading && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#a855f7', fontSize: '12px' }}>
                             <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                            Generating...
+                            {mode === null ? 'Capturing video frames...' : 'Analyzing...'}
                         </div>
                     )}
                 </div>
@@ -263,12 +364,27 @@ Please provide a concise, engaging 3-4 sentence summary of what this video is li
                                 height: '1px', background: 'linear-gradient(90deg, rgba(99,102,241,0.3), transparent)',
                                 marginBottom: '14px'
                             }} />
+
+                            {/* Source indicator */}
+                            {mode && (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    marginBottom: '10px', fontSize: '11px', fontWeight: '600',
+                                    color: mode === 'video' ? '#22c55e' : '#f59e0b'
+                                }}>
+                                    {mode === 'video' ? <Camera size={12} /> : <FileText size={12} />}
+                                    {mode === 'video'
+                                        ? 'Generated from actual video frames'
+                                        : 'Generated from metadata only (video frames unavailable)'}
+                                </div>
+                            )}
+
                             <p style={{
                                 fontSize: '14px', lineHeight: '1.75', color: 'var(--text-primary)',
                                 margin: 0
                             }}>{summary}</p>
                             <button
-                                onClick={() => { setSummary(''); setGenerated(false); setExpanded(false); }}
+                                onClick={() => { setSummary(''); setGenerated(false); setExpanded(false); setMode(null); }}
                                 style={{
                                     marginTop: '12px', background: 'transparent', border: 'none',
                                     color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px',
