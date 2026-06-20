@@ -176,14 +176,20 @@ export default function ChannelDetail() {
 
     const confirmDeleteVideo = async () => {
         if (!deleteVideoId) return;
+        const idToDelete = deleteVideoId;
         const token = localStorage.getItem('token');
+        setDeleteVideoId(null);
+        setData(prev => prev ? { ...prev, videos: prev.videos.filter(v => v.id !== idToDelete) } : null);
+        
         try {
-            await axios.delete(`${API_BASE_URL}/videos/${deleteVideoId}`, {
+            await axios.delete(`${API_BASE_URL}/videos/${idToDelete}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setData(prev => prev ? { ...prev, videos: prev.videos.filter(v => v.id !== deleteVideoId) } : null);
-            setDeleteVideoId(null);
-        } catch (err) { console.error(err); }
+            showToast('Video has been deleted', 'success');
+        } catch (err) { 
+            console.error(err); 
+            showToast('Failed to delete video', 'error');
+        }
     };
 
     if (loading) return (
@@ -494,8 +500,8 @@ export default function ChannelDetail() {
                         <h2 style={{ marginBottom: '12px' }}>{t('confirmDelete')}</h2>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>This action cannot be undone. This video will be permanently removed.</p>
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <button onClick={confirmDeleteVideo} style={{ flex: 1, padding: '12px', background: '#ff4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>{t('delete')}</button>
-                            <button onClick={() => setDeleteVideoId(null)} style={{ flex: 1, padding: '12px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>{t('cancel')}</button>
+                            <button onClick={confirmDeleteVideo} className="touchable-btn" style={{ flex: 1, padding: '12px', background: '#ff4444', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>{t('delete')}</button>
+                            <button onClick={() => setDeleteVideoId(null)} className="touchable-btn" style={{ flex: 1, padding: '12px', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>{t('cancel')}</button>
                         </div>
                     </div>
                 </div>
@@ -515,6 +521,16 @@ export default function ChannelDetail() {
                     }}
                 />
             )}
+
+            <style>{`
+                .touchable-btn {
+                    transition: opacity 0.1s ease, transform 0.1s ease;
+                }
+                .touchable-btn:active {
+                    opacity: 0.6;
+                    transform: scale(0.96);
+                }
+            `}</style>
         </div>
     );
 }
