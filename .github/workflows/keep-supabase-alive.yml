@@ -1,0 +1,18 @@
+name: Keep Supabase Alive
+on:
+  schedule:
+    # Runs at 00:00 UTC every 3 days
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: # Allows you to run it manually from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database
+        # We query the 'users' table (replace 'users' with any existing table if you want) with a limit of 1
+        # This counts as an API request and will keep your project active.
+        run: |
+          curl -s "${{ secrets.SUPABASE_URL }}/rest/v1/users?limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
